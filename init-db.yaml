@@ -33,7 +33,7 @@ objects:
                 secretKeyRef:
                   name: sentry-rds
                   key: db.port
-            - namw: SENTRY_DB_NAME
+            - name: SENTRY_DB_NAME
               valueFrom:
                 secretKeyRef:
                   name: sentry-rds
@@ -75,11 +75,11 @@ objects:
                   key: require_tls
             envFrom:
             - configRef:
-              name: sentry
+                name: sentry
             - secretRef:
-              name: sentry-general
+                name: sentry-general
             - secretRef:
-              name: sentry-init
+                name: sentry-init
             command:
               - "/bin/bash"
               - "-ecx"
