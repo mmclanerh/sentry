@@ -1,12 +1,8 @@
 #!/bin/bash
 
-set -ex
+DOCKER_CONF="$PWD/.docker"
+mkdir -p "$DOCKER_CONF"
+docker --config="$DOCKER_CONF" login -u="$QUAY_USER" -p="$QUAY_TOKEN" quay.io
 
-QUAY="quay.io/app-sre"
-TAG=$(shell git rev-parse --short=7 HEAD)
-TARGET="${QUAY}/sentry:${TAG}"
-
-docker build --pull -t ${TARGET} .
-docker push ${TARGET}
-
-exit 0
+# build images
+make build push
