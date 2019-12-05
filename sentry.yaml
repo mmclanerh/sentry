@@ -1,0 +1,478 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: sentry
+objects:
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    labels:
+      run: redis
+      service: sentry
+    name: redis
+  spec:
+    replicas: 1
+    selector:
+      run: redis
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          run: redis
+      spec:
+        containers:
+        - image: registry.redhat.io/rhel8/redis-5
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 6379
+            timeoutSeconds: 1
+          name: redis
+          ports:
+          - containerPort: 6379
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 6379
+            timeoutSeconds: 1
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    labels:
+      run: sentry-cron
+      service: sentry
+    name: sentry-cron
+  spec:
+    replicas: 1
+    selector:
+      run: sentry-cron
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          run: sentry-cron
+      spec:
+        containers:
+        - command:
+          - sentry
+          - run
+          - cron
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.port
+          - namw: SENTRY_DB_NAME
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.name
+          - name: SENTRY_DB_USER
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.password
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          envFrom:
+          - configRef:
+            name: sentry
+          - secretRef:
+            name: sentry-github-oauth
+          - secretRef:
+            name: sentry-general
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          name: sentry-cron
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/sentry/
+            name: config-volume
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: sentry
+          name: config-volume
+    test: false
+    triggers:
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    labels:
+      run: sentry-web
+      service: sentry
+    name: sentry-web
+  spec:
+    replicas: 2
+    selector:
+      run: sentry-web
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          run: sentry-web
+      spec:
+        containers:
+        - command:
+          - sentry
+          - run
+          - web
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.port
+          - namw: SENTRY_DB_NAME
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.name
+          - name: SENTRY_DB_USER
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.password
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          envFrom:
+          - configRef:
+            name: sentry
+          - secretRef:
+            name: sentry-github-oauth
+          - secretRef:
+            name: sentry-general
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          name: sentry-web
+          ports:
+          - containerPort: 9000
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: sentry
+          name: config-volume
+    test: false
+    triggers:
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    generation: 1
+    labels:
+      run: sentry-worker
+      service: sentry
+    name: sentry-worker
+  spec:
+    replicas: 1
+    selector:
+      run: sentry-worker
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          run: sentry-worker
+      spec:
+        containers:
+        - command:
+          - sentry
+          - run
+          - worker
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.port
+          - namw: SENTRY_DB_NAME
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.name
+          - name: SENTRY_DB_USER
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.password
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          envFrom:
+          - configRef:
+            name: sentry
+          - secretRef:
+            name: sentry-github-oauth
+          - secretRef:
+            name: sentry-general
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          name: sentry-worker
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/sentry/
+            name: config-volume
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: sentry
+          name: config-volume
+    test: false
+    triggers:
+    - type: ConfigChange
+  status:
+    availableReplicas: 0
+    latestVersion: 0
+    observedGeneration: 0
+    replicas: 0
+    unavailableReplicas: 0
+    updatedReplicas: 0
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      run: redis
+      service: sentry
+    name: redis
+  spec:
+    ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: 6379
+    selector:
+      run: redis
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      run: sentry
+      service: sentry
+    name: sentry
+  spec:
+    ports:
+    - name: http
+      port: 9000
+      protocol: TCP
+      targetPort: 9000
+    selector:
+      run: sentry-web
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+parameters:
+parameters:
+- name: IMAGE
+  value: quay.io/app-sre/sentry
+  displayName: sentry image
+  description: sentry docker image. Defaults to quay.io/app-sre/sentry
+- name: IMAGE_TAG
+  value: "latest"
+  displayName: sentry version
+  description: sentry version which defaults to latest
