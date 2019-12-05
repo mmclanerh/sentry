@@ -65,13 +65,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-  status:
-    availableReplicas: 0
-    latestVersion: 0
-    observedGeneration: 0
-    replicas: 0
-    unavailableReplicas: 0
-    updatedReplicas: 0
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -184,13 +177,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-  status:
-    availableReplicas: 0
-    latestVersion: 0
-    observedGeneration: 0
-    replicas: 0
-    unavailableReplicas: 0
-    updatedReplicas: 0
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -303,13 +289,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-  status:
-    availableReplicas: 0
-    latestVersion: 0
-    observedGeneration: 0
-    replicas: 0
-    unavailableReplicas: 0
-    updatedReplicas: 0
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -422,13 +401,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-  status:
-    availableReplicas: 0
-    latestVersion: 0
-    observedGeneration: 0
-    replicas: 0
-    unavailableReplicas: 0
-    updatedReplicas: 0
 - apiVersion: v1
   kind: Service
   metadata:
@@ -437,6 +409,7 @@ objects:
       service: sentry
     name: redis
   spec:
+    type: ClusterIP
     ports:
     - port: 6379
       protocol: TCP
@@ -444,9 +417,6 @@ objects:
     selector:
       sentry-component: redis
     sessionAffinity: None
-    type: ClusterIP
-  status:
-    loadBalancer: {}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -455,6 +425,7 @@ objects:
       service: sentry
     name: sentry
   spec:
+    type: ClusterIP
     ports:
     - name: http
       port: 9000
@@ -463,9 +434,6 @@ objects:
     selector:
       sentry-component: sentry-web
     sessionAffinity: None
-    type: ClusterIP
-  status:
-    loadBalancer: {}
 parameters:
 parameters:
 - name: IMAGE
