@@ -164,19 +164,11 @@ objects:
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
-          volumeMounts:
-          - mountPath: /etc/sentry/
-            name: config-volume
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        volumes:
-        - configMap:
-            defaultMode: 420
-            name: sentry
-          name: config-volume
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -284,11 +276,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        volumes:
-        - configMap:
-            defaultMode: 420
-            name: sentry
-          name: config-volume
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -388,19 +375,11 @@ objects:
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
-          volumeMounts:
-          - mountPath: /etc/sentry/
-            name: config-volume
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        volumes:
-        - configMap:
-            defaultMode: 420
-            name: sentry
-          name: config-volume
 - apiVersion: v1
   kind: Service
   metadata:
