@@ -74,7 +74,7 @@ objects:
                   name: smtp
                   key: require_tls
             envFrom:
-            - configRef:
+            - configMapRef:
                 name: sentry
             - secretRef:
                 name: sentry-general
