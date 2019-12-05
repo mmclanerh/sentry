@@ -4,10 +4,9 @@ kind: Template
 metadata:
   name: sentry
 objects:
-- apiVersion: v1
-  kind: DeploymentConfig
+- apiVersion: apps/v1
+  kind: Deployment
   metadata:
-    generation: 1
     labels:
       run: redis
       service: sentry
@@ -72,10 +71,9 @@ objects:
     replicas: 0
     unavailableReplicas: 0
     updatedReplicas: 0
-- apiVersion: v1
-  kind: DeploymentConfig
+- apiVersion: apps/v1
+  kind: Deployment
   metadata:
-    generation: 1
     labels:
       run: sentry-cron
       service: sentry
@@ -191,10 +189,9 @@ objects:
     replicas: 0
     unavailableReplicas: 0
     updatedReplicas: 0
-- apiVersion: v1
-  kind: DeploymentConfig
+- apiVersion: apps/v1
+  kind: Deployment
   metadata:
-    generation: 1
     labels:
       run: sentry-web
       service: sentry
@@ -310,10 +307,9 @@ objects:
     replicas: 0
     unavailableReplicas: 0
     updatedReplicas: 0
-- apiVersion: v1
-  kind: DeploymentConfig
+- apiVersion: apps/v1
+  kind: Deployment
   metadata:
-    generation: 1
     labels:
       run: sentry-worker
       service: sentry
