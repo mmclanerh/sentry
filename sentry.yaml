@@ -53,10 +53,10 @@ objects:
             timeoutSeconds: 1
           resources:
             limits:
-              cpu: 1
+              cpu: 1000m
               memory: 512Mi
             requests:
-              cpu: 1
+              cpu: 100m
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -157,10 +157,10 @@ objects:
               name: sentry-general
           resources:
             limits:
-              cpu: 1
+              cpu: 1000m
               memory: 512Mi
             requests:
-              cpu: 1
+              cpu: 100m
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -264,10 +264,10 @@ objects:
             protocol: TCP
           resources:
             limits:
-              cpu: 1
+              cpu: 1000m
               memory: 512Mi
             requests:
-              cpu: 1
+              cpu: 100m
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
@@ -368,10 +368,10 @@ objects:
               name: sentry-general
           resources:
             limits:
-              cpu: 1
+              cpu: 1000m
               memory: 512Mi
             requests:
-              cpu: 1
+              cpu: 100m
               memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
