@@ -28,7 +28,8 @@ objects:
           run: redis
       spec:
         containers:
-        - image: registry.redhat.io/rhel8/redis-5
+        - name: redis
+          image: registry.redhat.io/rhel8/redis-5
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 3
@@ -38,7 +39,6 @@ objects:
             tcpSocket:
               port: 6379
             timeoutSeconds: 1
-          name: redis
           ports:
           - containerPort: 6379
             protocol: TCP
@@ -50,7 +50,13 @@ objects:
             tcpSocket:
               port: 6379
             timeoutSeconds: 1
-          resources: {}
+          resources:
+            limits:
+              cpu: 1
+              memory: 512Mi
+            requests:
+              cpu: 1
+              memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         dnsPolicy: ClusterFirst
@@ -58,9 +64,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-    test: false
-    triggers:
-    - type: ConfigChange
   status:
     availableReplicas: 0
     latestVersion: 0
@@ -92,7 +95,10 @@ objects:
           run: sentry-cron
       spec:
         containers:
-        - command:
+        - name: sentry-cron
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
           - sentry
           - run
           - cron
@@ -154,10 +160,13 @@ objects:
               name: sentry-github-oauth
           - secretRef:
               name: sentry-general
-          image: ${IMAGE}:${IMAGE_TAG}
-          imagePullPolicy: Always
-          name: sentry-cron
-          resources: {}
+          resources:
+            limits:
+              cpu: 1
+              memory: 512Mi
+            requests:
+              cpu: 1
+              memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -173,9 +182,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-    test: false
-    triggers:
-    - type: ConfigChange
   status:
     availableReplicas: 0
     latestVersion: 0
@@ -207,7 +213,10 @@ objects:
           run: sentry-web
       spec:
         containers:
-        - command:
+        - name: sentry-web
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
           - sentry
           - run
           - web
@@ -269,13 +278,16 @@ objects:
               name: sentry-github-oauth
           - secretRef:
               name: sentry-general
-          image: ${IMAGE}:${IMAGE_TAG}
-          imagePullPolicy: Always
-          name: sentry-web
           ports:
           - containerPort: 9000
             protocol: TCP
-          resources: {}
+          resources:
+            limits:
+              cpu: 1
+              memory: 512Mi
+            requests:
+              cpu: 1
+              memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         dnsPolicy: ClusterFirst
@@ -288,9 +300,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-    test: false
-    triggers:
-    - type: ConfigChange
   status:
     availableReplicas: 0
     latestVersion: 0
@@ -322,7 +331,10 @@ objects:
           run: sentry-worker
       spec:
         containers:
-        - command:
+        - name: sentry-worker
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
           - sentry
           - run
           - worker
@@ -384,10 +396,13 @@ objects:
               name: sentry-github-oauth
           - secretRef:
               name: sentry-general
-          image: ${IMAGE}:${IMAGE_TAG}
-          imagePullPolicy: Always
-          name: sentry-worker
-          resources: {}
+          resources:
+            limits:
+              cpu: 1
+              memory: 512Mi
+            requests:
+              cpu: 1
+              memory: 512Mi
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
@@ -403,9 +418,6 @@ objects:
             defaultMode: 420
             name: sentry
           name: config-volume
-    test: false
-    triggers:
-    - type: ConfigChange
   status:
     availableReplicas: 0
     latestVersion: 0
