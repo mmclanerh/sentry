@@ -359,6 +359,8 @@ objects:
               secretKeyRef:
                 name: smtp
                 key: require_tls
+          - name: C_FORCE_ROOT
+            value: "TRUE"
           envFrom:
           - configMapRef:
               name: sentry
