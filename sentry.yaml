@@ -108,11 +108,6 @@ objects:
                secretKeyRef:
                  name: sentry-rds
                  key: db.port
-          - name: SENTRY_DB_NAME
-            valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.name
           - name: SENTRY_DB_USER
             valueFrom:
                secretKeyRef:
@@ -212,11 +207,6 @@ objects:
                secretKeyRef:
                  name: sentry-rds
                  key: db.port
-          - name: SENTRY_DB_NAME
-            valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.name
           - name: SENTRY_DB_USER
             valueFrom:
                secretKeyRef:
@@ -319,11 +309,6 @@ objects:
                secretKeyRef:
                  name: sentry-rds
                  key: db.port
-          - name: SENTRY_DB_NAME
-            valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.name
           - name: SENTRY_DB_USER
             valueFrom:
                secretKeyRef:
