@@ -19,7 +19,7 @@ objects:
               limits:
                 # for some reason this populator is consuming lots of memory
                 cpu: 500m
-                memory: 1500Mi
+                memory: 2500Mi
               requests:
                 cpu: 50m
                 memory: 800Mi
