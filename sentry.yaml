@@ -137,7 +137,7 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: smtp
-                key: user
+                key: username
           - name: SENTRY_EMAIL_PORT
             valueFrom:
               secretKeyRef:
@@ -236,12 +236,12 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: smtp
-                key: username
+                key: password
           - name: SENTRY_EMAIL_USER
             valueFrom:
               secretKeyRef:
                 name: smtp
-                key: password
+                key: username
           - name: SENTRY_EMAIL_PORT
             valueFrom:
               secretKeyRef:
@@ -343,12 +343,12 @@ objects:
             valueFrom:
               secretKeyRef:
                 name: smtp
-                key: username
+                key: password
           - name: SENTRY_EMAIL_USER
             valueFrom:
               secretKeyRef:
                 name: smtp
-                key: password
+                key: username
           - name: SENTRY_EMAIL_PORT
             valueFrom:
               secretKeyRef:
