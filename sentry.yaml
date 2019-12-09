@@ -119,7 +119,10 @@ objects:
                  name: sentry-rds
                  key: db.password
           - name: SENTRY_DB_NAME
-            value: "sentry"
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
           - name: SENTRY_EMAIL_HOST
             valueFrom:
               secretKeyRef:
@@ -220,7 +223,10 @@ objects:
                  name: sentry-rds
                  key: db.password
           - name: SENTRY_DB_NAME
-            value: "sentry"
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
           - name: SENTRY_EMAIL_HOST
             valueFrom:
               secretKeyRef:
@@ -324,7 +330,10 @@ objects:
                  name: sentry-rds
                  key: db.password
           - name: SENTRY_DB_NAME
-            value: "sentry"
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
           - name: SENTRY_EMAIL_HOST
             valueFrom:
               secretKeyRef:
