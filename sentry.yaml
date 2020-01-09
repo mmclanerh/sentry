@@ -382,6 +382,100 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+- apiVersion: batch/v1beta1
+  kind: CronJob
+  metadata:
+    labels:
+      sentry-component: sentry-cleanup
+      service: sentry
+    name: sentry-cleanup
+  spec:
+    successfulJobsHistoryLimit: 5
+    failedJobsHistoryLimit: 1
+    schedule: "0 0 * * *"
+    concurrencyPolicy: Forbid
+    jobTemplate:
+      spec:
+        containers:
+        - name: sentry-cleanup
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - sentry
+          - cleanup
+          - --days=${CLEANUP_DAYS}
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+               secretKeyRef:
+                 name: sentry-rds
+                 key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: OnFailure
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
 - apiVersion: v1
   kind: Service
   metadata:
@@ -416,7 +510,6 @@ objects:
       sentry-component: sentry-web
     sessionAffinity: None
 parameters:
-parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
   displayName: sentry image
@@ -425,3 +518,7 @@ parameters:
   value: "latest"
   displayName: sentry version
   description: sentry version which defaults to latest
+- name: CLEANUP_DAYS
+  value: "14"
+  displayName: sentry cleanup interval
+  description: how many days of data should be kept in the sentry database
