@@ -30,7 +30,7 @@ objects:
       spec:
         containers:
         - name: redis
-          image: registry.redhat.io/rhel8/redis-5
+          image: quay.io/app-sre/redis-5
           imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 3
