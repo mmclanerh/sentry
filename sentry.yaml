@@ -65,6 +65,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -169,6 +170,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -276,6 +278,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -382,6 +385,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: batch/v1beta1
   kind: CronJob
   metadata:
@@ -481,6 +485,7 @@ objects:
             schedulerName: default-scheduler
             securityContext: {}
             terminationGracePeriodSeconds: 30
+            serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -527,3 +532,7 @@ parameters:
   value: "14"
   displayName: sentry cleanup interval
   description: how many days of data should be kept in the sentry database
+- name: SERVICE_ACCOUNT
+  value: "sentry"
+  deplayName: sentry service account
+  description: name of the service account to use when deploying the pod

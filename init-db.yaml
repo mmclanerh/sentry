@@ -93,6 +93,7 @@ objects:
         restartPolicy: OnFailure
         terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
+        serviceAccountName: ${SERVICE_ACCOUNT}
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
@@ -102,3 +103,7 @@ parameters:
   value: latest
   displayName: sentry version
   description: sentry version which defaults to latest
+- name: SERVICE_ACCOUNT
+  value: "sentry"
+  deplayName: sentry service account
+  description: name of the service account to use when deploying the pod
