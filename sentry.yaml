@@ -476,9 +476,9 @@ objects:
                   secretKeyRef:
                     name: smtp
                     key: require_tls
-          envFrom:
-          - configMapRef:
-              name: sentry
+              envFrom:
+              - configMapRef:
+                  name: sentry
               - secretRef:
                   name: sentry-github-oauth
               - secretRef:
