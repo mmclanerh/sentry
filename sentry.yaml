@@ -4,6 +4,18 @@ kind: Template
 metadata:
   name: sentry
 objects:
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  data:
+    SENTRY_SINGLE_ORGANIZATION: "${SENTRY_SINGLE_ORGANIZATION}"
+  kind: ConfigMap
+  metadata:
+    labels:
+      service: sentry
+    name: sentry
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -536,3 +548,7 @@ parameters:
   value: "sentry"
   deplayName: sentry service account
   description: name of the service account to use when deploying the pod
+- name: SENTRY_SINGLE_ORGANIZATION
+  value: "true"
+  deplayName: sentry single organization
+  description: should sentry be deployed with a single organization configuration
