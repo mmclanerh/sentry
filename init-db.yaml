@@ -97,8 +97,8 @@ objects:
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
-  displayName: senter image
-  description: senter docker image. Defaults to quay.io/app-sre/sentry
+  displayName: sentry image
+  description: sentry docker image. Defaults to quay.io/app-sre/sentry
 - name: IMAGE_TAG
   value: latest
   displayName: sentry version
