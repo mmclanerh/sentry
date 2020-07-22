@@ -8,6 +8,8 @@ objects:
   kind: ServiceAccount
   metadata:
     name: ${SERVICE_ACCOUNT}
+  imagePullSecrets:
+    - name: quay.io
 - apiVersion: v1
   data:
     SENTRY_SINGLE_ORGANIZATION: "${SENTRY_SINGLE_ORGANIZATION}"
