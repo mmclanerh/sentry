@@ -1,0 +1,504 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: sentry-deps
+objects:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: redis
+      service: sentry
+    name: redis
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-component: redis
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-component: redis
+      spec:
+        containers:
+        - name: redis
+          image: ${REDIS_IMAGE}:${REDIS_IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 6379
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: 6379
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: redis
+      service: sentry
+    name: redis
+  spec:
+    type: ClusterIP
+    ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: 6379
+    selector:
+      sentry-component: redis
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: redis
+      service: sentry
+    name: redis
+  stringData:
+    endpoint: redis
+    port: "6379"
+    auth_token:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: zookeeper
+      service: sentry
+    name: zookeeper
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-component: zookeeper
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-component: zookeeper
+      spec:
+        containers:
+        - name: zookeeper
+          image: ${ZOOKEEPER_IMAGE}:${ZOOKEEPER_IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: ZOOKEEPER_CLIENT_PORT
+            value: "2181"
+          - name: ZOOKEEPER_LOG4J_ROOT_LOGLEVEL
+            value: WARN
+          - name: ZOOKEEPER_TOOLS_LOG4J_LOGLEVEL
+            value: WARN
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: zookeeper
+      service: sentry
+    name: zookeeper
+  spec:
+    type: ClusterIP
+    ports:
+    - port: 2181
+      protocol: TCP
+      targetPort: 2181
+    selector:
+      sentry-component: zookeeper
+    sessionAffinity: None
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: kafka
+      service: sentry
+    name: sentry-kafka
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-component: kafka
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-component: kafka
+      spec:
+        containers:
+        - name: kafka
+          image: ${KAFKA_IMAGE}:${KAFKA_IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: KAFKA_ZOOKEEPER_CONNECT
+            value: "zookeeper:2181"
+          - name: KAFKA_LISTENERS
+            value: "PLAINTEXT://:9092"
+          - name:  KAFKA_ADVERTISED_LISTENERS
+            value: "PLAINTEXT://${KAFKA_SERVICE}:9092"
+          - name:  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+            value: "1"
+          - name: KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS
+            value: "1"
+          - name: KAFKA_LOG_RETENTION_HOURS
+            value: "24"
+          - name: CONFLUENT_SUPPORT_METRICS_ENABLE
+            value: "false"
+          - name: KAFKA_LOG4J_LOGGERS
+            value: "kafka.cluster=WARN,kafka.controller=WARN,kafka.coordinator=WARN,kafka.log=WARN,kafka.server=WARN,kafka.zookeeper=WARN,state.change.logger=WARN"
+          - name: KAFKA_LOG4J_ROOT_LOGLEVEL
+            value: WARN
+          - name: KAFKA_TOOLS_LOG4J_LOGLEVEL
+            value: WARN
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: kafka
+      service: sentry
+    name: ${KAFKA_SERVICE}
+  spec:
+    type: ClusterIP
+    ports:
+    - port: ${{KAFKA_SERVICE_PORT}}
+      protocol: TCP
+      targetPort: 9092
+    selector:
+      sentry-component: kafka
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: relay
+      service: sentry
+    name: relay
+  stringData:
+    credentials.json: ${RELAY_CREDENTIALS}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-init
+  stringData:
+    SENTRY_INITIAL_EMAIL: ${SENTRY_INITIAL_EMAIL}
+    SENTRY_INITIAL_PASSWORD: ${SENTRY_INITIAL_PASSWORD}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-general
+  stringData:
+    SENTRY_ENABLE_EMAIL_REPLIES: "false"
+    SENTRY_FILESTORE_DIR: /tmp/sentry-files
+    SENTRY_SECRET_KEY: ${SENTRY_SECRET_KEY}
+    SENTRY_SERVER_EMAIL: ${SENTRY_SERVER_EMAIL}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-github-oauth
+  data:
+    GITHUB_API_SECRET: ${GITHUB_API_SECRET}
+    GITHUB_APP_ID: ${GITHUB_APP_ID}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      service: sentry
+    name: sentry
+  stringData:
+    SENTRY_SINGLE_ORGANIZATION: "true"
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: smtp
+  data:
+    server:
+    password:
+    username:
+    port:
+    require_tls:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: postgres
+      service: sentry
+    name: sentry-rds
+  stringData:
+    db.host: postgresql
+    db.port: "5432"
+    db.user: ${POSTGRES_USER}
+    db.password: ${POSTGRES_PASSWORD}
+    db.name: sentry
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: ${SERVICE_ACCOUNT}
+  imagePullSecrets:
+  - name: quay.io
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: kafka
+  stringData:
+    bootstrapServerHost: ${KAFKA_SERVICE}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      sentry-component: relay
+      service: sentry
+    name: relay-config
+  data:
+    config.yml: |
+      relay:
+        upstream: "http://${SENTRY_SERVICE}:${{SENTRY_SERVICE_PORT}}/"
+        host: 0.0.0.0
+        port: ${{RELAY_SERVICE_PORT}}
+      logging:
+        level: WARN
+      processing:
+        enabled: true
+        kafka_config:
+          - {name: "bootstrap.servers", value: "${KAFKA_SERVICE}:${{KAFKA_SERVICE_PORT}}"}
+        redis: redis://${REDIS_SERVICE}:${{REDIS_SERVICE_PORT}}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      sentry-component: nginx
+      service: sentry
+    name: nginx-config
+  data:
+    nginx.conf: |
+      user nginx;
+      worker_processes 1;
+
+      error_log /var/log/nginx/error.log warn;
+      pid /var/run/nginx.pid;
+
+
+      events {
+        worker_connections 1024;
+      }
+
+
+      http {
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+        '$status $body_bytes_sent "$http_referer" '
+        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        reset_timedout_connection on;
+
+        keepalive_timeout 75s;
+
+        gzip off;
+        server_tokens off;
+
+        server_names_hash_bucket_size 64;
+        types_hash_max_size 2048;
+        types_hash_bucket_size 64;
+        client_max_body_size 100m;
+
+        proxy_http_version 1.1;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_next_upstream error timeout invalid_header http_502 http_503 non_idempotent;
+        proxy_next_upstream_tries 2;
+
+        # Remove the Connection header if the client sends it,
+        # it could be "close" to close a keepalive connection
+        proxy_set_header Connection '';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_read_timeout 30s;
+        proxy_send_timeout 5s;
+
+        upstream relay {
+          server ${RELAY_SERVICE}:${{RELAY_SERVICE_PORT}};
+        }
+
+        upstream sentry {
+          server ${SENTRY_SERVICE}:${{SENTRY_SERVICE_PORT}};
+        }
+
+        server {
+          listen 80;
+
+          location /api/store/ {
+            proxy_pass http://relay;
+          }
+          location ~ ^/api/[1-9]\d*/ {
+            proxy_pass http://relay;
+          }
+          location / {
+            proxy_pass http://sentry;
+          }
+        }
+      }
+parameters:
+- name: KAFKA_IMAGE
+  value: quay.io/cloudservices/cp-kafka
+- name: KAFKA_IMAGE_TAG
+  value: 5.5.0
+- name: SERVICE_ACCOUNT
+  value: sentry
+  deplayName: sentry service account
+  description: name of the service account to use when deploying the pod
+- name: RELAY_CREDENTIALS
+  required: true
+  displayName: relay's credential file
+  description: sentry relay's credential information for registering with sentry
+- name: SENTRY_INITIAL_EMAIL
+  value: tester@fake.com
+- name: SENTRY_INITIAL_PASSWORD
+  value: test
+- name: SENTRY_SECRET_KEY
+  required: true
+- name: SENTRY_SERVER_EMAIL
+  value: tester@sentrytest.com
+- name: GITHUB_API_SECRET
+  value: ""
+- name: GITHUB_APP_ID
+  value: ""
+- name: POSTGRES_USER
+  value: sentry
+- name: POSTGRES_PASSWORD
+  value: secret
+- name: REDIS_SERVICE
+  value: redis
+  displayName: redis service name
+  description: name of the redis service
+- name: REDIS_SERVICE_PORT
+  value: "6379"
+  displayName: redis port
+  description: port number redis listens on for client connections
+- name: KAFKA_SERVICE
+  value: sentry-kafka
+  displayName: kafka service name
+  description: name of the kafka service
+- name: KAFKA_SERVICE_PORT
+  value: "9092"
+  displayName: kafka port
+  description: port number kafka listens on for client connections
+- name: SENTRY_SERVICE
+  value: sentry-web
+  displayName: sentry web service name
+  description: name of the sentry web service
+- name: SENTRY_SERVICE_PORT
+  value: "9000"
+  displayName: sentry web service port
+  description: port the sentry web service listens on for connections
+- name: REDIS_IMAGE
+  value: quay.io/app-sre/redis-5
+- name: REDIS_IMAGE_TAG
+  value: latest
+- name: ZOOKEEPER_IMAGE
+  value: quay.io/cloudservices/cp-zookeeper
+- name: ZOOKEEPER_IMAGE_TAG
+  value: "5.5.0"
+- name: RELAY_SERVICE
+  value: sentry-relay
+  displayName: sentry relay service name
+  description: name of the sentry relay service
+- name: RELAY_SERVICE_PORT
+  value: "3000"
+  displayName: sentry relay service port
+  description: port the sentry relay service listens on for connections

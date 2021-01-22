@@ -4,94 +4,19 @@ kind: Template
 metadata:
   name: sentry
 objects:
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: ${SERVICE_ACCOUNT}
-  imagePullSecrets:
-    - name: quay.io
-- apiVersion: v1
-  data:
-    SENTRY_SINGLE_ORGANIZATION: "${SENTRY_SINGLE_ORGANIZATION}"
-  kind: ConfigMap
-  metadata:
-    labels:
-      service: sentry
-    name: sentry
+# Sentry
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
     labels:
-      sentry-component: redis
-      service: sentry
-    name: redis
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        sentry-component: redis
-    progressDeadlineSeconds: 600
-    revisionHistoryLimit: 10
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    template:
-      metadata:
-        labels:
-          sentry-component: redis
-      spec:
-        containers:
-        - name: redis
-          image: quay.io/app-sre/redis-5
-          imagePullPolicy: IfNotPresent
-          livenessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            tcpSocket:
-              port: 6379
-            timeoutSeconds: 1
-          ports:
-          - containerPort: 6379
-            protocol: TCP
-          readinessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
-            tcpSocket:
-              port: 6379
-            timeoutSeconds: 1
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 2048Mi
-            requests:
-              cpu: 1000m
-              memory: 2048Mi
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    labels:
-      sentry-component: sentry-cron
+      sentry-component: sentry
       service: sentry
     name: sentry-cron
   spec:
     replicas: 1
     selector:
       matchLabels:
-        sentry-component: sentry-cron
+        sentry-task: cron
     progressDeadlineSeconds: 600
     revisionHistoryLimit: 10
     strategy:
@@ -102,7 +27,7 @@ objects:
     template:
       metadata:
         labels:
-          sentry-component: sentry-cron
+          sentry-task: cron
       spec:
         containers:
         - name: sentry-cron
@@ -115,24 +40,24 @@ objects:
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.host
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
           - name: SENTRY_POSTGRES_PORT
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.port
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
           - name: SENTRY_DB_USER
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.user
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
           - name: SENTRY_DB_PASSWORD
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.password
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
           - name: SENTRY_DB_NAME
             valueFrom:
               secretKeyRef:
@@ -163,6 +88,23 @@ objects:
               secretKeyRef:
                 name: smtp
                 key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
           envFrom:
           - configMapRef:
               name: sentry
@@ -189,14 +131,14 @@ objects:
   kind: Deployment
   metadata:
     labels:
-      sentry-component: sentry-web
+      sentry-component: sentry
       service: sentry
     name: sentry-web
   spec:
     replicas: 2
     selector:
       matchLabels:
-        sentry-component: sentry-web
+        sentry-task: web
     progressDeadlineSeconds: 600
     revisionHistoryLimit: 10
     strategy:
@@ -207,7 +149,7 @@ objects:
     template:
       metadata:
         labels:
-          sentry-component: sentry-web
+          sentry-task: web
       spec:
         containers:
         - name: sentry-web
@@ -220,24 +162,24 @@ objects:
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.host
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
           - name: SENTRY_POSTGRES_PORT
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.port
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
           - name: SENTRY_DB_USER
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.user
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
           - name: SENTRY_DB_PASSWORD
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.password
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
           - name: SENTRY_DB_NAME
             valueFrom:
               secretKeyRef:
@@ -268,6 +210,23 @@ objects:
               secretKeyRef:
                 name: smtp
                 key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
           envFrom:
           - configMapRef:
               name: sentry
@@ -297,14 +256,14 @@ objects:
   kind: Deployment
   metadata:
     labels:
-      sentry-component: sentry-worker
+      sentry-component: sentry
       service: sentry
     name: sentry-worker
   spec:
     replicas: 1
     selector:
       matchLabels:
-        sentry-component: sentry-worker
+        sentry-task: worker
     progressDeadlineSeconds: 600
     revisionHistoryLimit: 10
     strategy:
@@ -315,7 +274,7 @@ objects:
     template:
       metadata:
         labels:
-          sentry-component: sentry-worker
+          sentry-task: worker
       spec:
         containers:
         - name: sentry-worker
@@ -328,24 +287,24 @@ objects:
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.host
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
           - name: SENTRY_POSTGRES_PORT
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.port
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
           - name: SENTRY_DB_USER
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.user
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
           - name: SENTRY_DB_PASSWORD
             valueFrom:
-               secretKeyRef:
-                 name: sentry-rds
-                 key: db.password
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
           - name: SENTRY_DB_NAME
             valueFrom:
               secretKeyRef:
@@ -378,6 +337,23 @@ objects:
                 key: require_tls
           - name: C_FORCE_ROOT
             value: "TRUE"
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
           envFrom:
           - configMapRef:
               name: sentry
@@ -400,13 +376,694 @@ objects:
         securityContext: {}
         terminationGracePeriodSeconds: 30
         serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-ingest-consumer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: ingest-consumer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: ingest-consumer
+      spec:
+        containers:
+        - name: sentry-ingest-consumer
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - ingest-consumer
+          - --all-consumer-types
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-post-process-forwarder
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: post-process-forwarder
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: post-process-forwarder
+      spec:
+        containers:
+        - name: sentry-post-process-forwarder
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - post-process-forwarder
+          - --commit-batch-size 1
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-subscription-consumer-events
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: subscription-consumer-events
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: subscription-consumer-events
+      spec:
+        containers:
+        - name: sentry-subscription-consumer-events
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - query-subscription-consumer
+          - --commit-batch-size 1 
+          - --topic events-subscription-results
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: sentry
+      service: sentry
+    name: sentry-subscription-consumer-transactions
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: subscription-consumer-transactions
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: subscription-consumer-transactions
+      spec:
+        containers:
+        - name: sentry-subscription-consumer-transactions
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - query-subscription-consumer
+          - --commit-batch-size 1 
+          - --topic transactions-subscription-results
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: relay
+      service: sentry
+    name: relay
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: relay
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: relay
+      spec:
+        containers:
+        - name: relay
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - -c /etc/relay
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${$SNUBA_API_SERVICE_PORT}}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeMounts:
+          - name: relay-config
+            mountPath: /etc/relay/config.yml
+            subPath: config.yml
+          - name: relay-credentials
+            mountPath: /etc/relay/credentials.json
+            subPath: credentials.json
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        volumes:
+        - name: relay-config
+          configMap:
+            name: ${RELAY_CONFIG_CONFIGMAP}
+            items:
+              key: config.yml
+              path: config.yml
+        - name: relay-credentials
+          secret:
+            secretName: ${RELAY_CREDENTIALS_SECRET}
+            items:
+              key: credentials.json
+              path: credentials.json
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: nginx
+      service: sentry
+    name: nginx
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: nginx
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: nginx
+      spec:
+        containers:
+        - name: nginx
+          image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeMounts:
+          - name: nginx-config
+            mountPath: /etc/nginx
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        volumes:
+        - name: nginx-config
+          configMap:
+            name: ${NGINX_CONFIG_CONFIGMAP}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: batch/v1beta1
   kind: CronJob
   metadata:
     labels:
-      sentry-component: sentry-cleanup
+      sentry-component: cleanup
       service: sentry
-    name: sentry-cleanup
+    name: cleanup
   spec:
     successfulJobsHistoryLimit: 5
     failedJobsHistoryLimit: 1
@@ -417,7 +1074,7 @@ objects:
         template:
           metadata:
             labels:
-              sentry-component: sentry-cleanup
+              sentry-task: cleanup
           spec:
             containers:
             - name: sentry-cleanup
@@ -478,6 +1135,23 @@ objects:
                   secretKeyRef:
                     name: smtp
                     key: require_tls
+              - name: SNUBA
+                value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+              - name: SENTRY_REDIS_HOST
+                valueFrom:
+                  secretKeyRef:
+                    name: ${REDIS_SECRET}
+                    key: endpoint
+              - name: SENTRY_REDIS_PORT
+                valueFrom:
+                  secretKeyRef:
+                    name: ${REDIS_SECRET}
+                    key: port
+              - name: SENTRY_REDIS_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ${REDIS_SECRET}
+                    key: auth_token
               envFrom:
               - configMapRef:
                   name: sentry
@@ -504,53 +1178,902 @@ objects:
   kind: Service
   metadata:
     labels:
-      sentry-component: redis
+      sentry-component: sentry
       service: sentry
-    name: redis
+    name: ${SENTRY_SERVICE}
   spec:
     type: ClusterIP
     ports:
-    - port: 6379
+    - name: http
+      port: ${{SENTRY_SERVICE_PORT}}
       protocol: TCP
-      targetPort: 6379
+      targetPort: 9000
     selector:
-      sentry-component: redis
+      sentry-task: web
     sessionAffinity: None
 - apiVersion: v1
   kind: Service
   metadata:
     labels:
-      sentry-component: sentry
+      sentry-component: relay
       service: sentry
-    name: sentry
+    name: ${RELAY_SERVICE}
   spec:
     type: ClusterIP
     ports:
     - name: http
-      port: 9000
+      port: ${{RELAY_SERVICE_PORT}}
       protocol: TCP
-      targetPort: 9000
+      targetPort: 3000
     selector:
-      sentry-component: sentry-web
+      sentry-task: relay
     sessionAffinity: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: nginx
+      service: sentry
+    name: ${NGINX_SERVICE}
+  spec:
+    type: ClusterIP
+    ports:
+    - name: http
+      port: ${{NGINX_SERVICE_PORT}}
+      protocol: TCP
+      targetPort: 80
+    selector:
+      sentry-task: nginx
+    sessionAffinity: None
+
+
+# Snuba
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: clickhouse
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: clickhouse
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: clickhouse
+      spec:
+        containers:
+        - name: clickhouse-server
+          image: yandex/clickhouse-server:20.3.9.70
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 8123
+            protocol: TCP
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeMounts:
+          - name: clickhouse-config
+            mountPath: /etc/clickhouse-server/config.d
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        volumes:
+        - name: clickhouse-config
+          configMap:
+            name: ${CLICKHOUSE_CONFIG_CONFIGMAP}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: ${CLICKHOUSE_SERVICE}
+  spec:
+    type: ClusterIP
+    ports:
+    - port: ${{CLICKHOUSE_SERVICE_PORT}}
+      protocol: TCP
+      targetPort: 8123
+    selector:
+      sentry-task: clickhouse
+    sessionAffinity: None
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-api
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-api
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-api
+      spec:
+        containers:
+        - name: snuba-api
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - api
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: ${SNUBA_API_SERVICE}
+  spec:
+    type: ClusterIP
+    ports:
+    - port: ${{SNUBA_API_SERVICE_PORT}}
+      protocol: TCP
+      targetPort: 1218
+    selector:
+      sentry-task: snuba-api
+    sessionAffinity: None
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-consumer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-consumer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-consumer
+      spec:
+        containers:
+        - name: snuba-consumer
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - consumer
+          - --storage events
+          - --auto-offset-reset=latest
+          - --max-batch-time-ms 750
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-outcomes-consumer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-outcomes-consumer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-outcomes-consumer
+      spec:
+        containers:
+        - name: snuba-outcomes-consumer
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - consumer
+          - --storage outcomes_raw
+          - --auto-offset-reset=earliest
+          - --max-batch-time-ms 750
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-sessions-consumer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-sessions-consumer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-sessions-consumer
+      spec:
+        containers:
+        - name: snuba-sessions-consumer
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - consumer
+          - --storage sessions_raw
+          - --auto-offset-reset=latest
+          - --max-batch-time-ms 750
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-transactions-consumer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-transactions-consumer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-transactions-consumer
+      spec:
+        containers:
+        - name: snuba-transactions-consumer
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - consumer
+          - --storage transactions
+          - --consumer-group transactions_group
+          - --auto-offset-reset=latest
+          - --max-batch-time-ms 750
+          - --commit-log-topic=snuba-commit-log
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-replacer
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-replacer
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-replacer
+      spec:
+        containers:
+        - name: snuba-replacer
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - replacer
+          - --storage events
+          - --auto-offset-reset=latest
+          - --max-batch-size 3
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-subscription-consumer-events
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-subscription-consumer-events
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-subscription-consumer-events
+      spec:
+        containers:
+        - name: snuba-subscription-consumer-events
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - subscriptions
+          - --auto-offset-reset=latest
+          - --consumer-group=snuba-events-subscriptions-consumers
+          - --topic=events
+          - --result-topic=events-subscription-results
+          - --dataset=events
+          - --commit-log-topic=snuba-commit-log
+          - --commit-log-group=snuba-consumers
+          - --delay-seconds=60
+          - --schedule-ttl=60
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: snuba-subscription-consumer-transactions
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: snuba-subscription-consumer-transactions
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: snuba-subscription-consumer-transactions
+      spec:
+        containers:
+        - name: snuba-subscription-consumer-transactions
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - snuba
+          - subscriptions
+          - --auto-offset-reset=latest
+          - --consumer-group=snuba-transactions-subscriptions-consumers
+          - --topic=events
+          - --result-topic=transactions-subscription-results
+          - --dataset=transactions
+          - --commit-log-topic=snuba-commit-log
+          - --commit-log-group=transactions_group
+          - --delay-seconds=60
+          - --schedule-ttl=60
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE} 
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
+
+# Symbolicator
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: symbolicator
+      service: sentry
+    name: symbolicator
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: symbolicator
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: symbolicator
+      spec:
+        containers:
+        - name: symbolicator
+          image: ${SYMBOLICATOR_IMAGE}:${SYMBOLICATOR_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - run
+          - -c /etc/symbolicator/config.yml
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        serviceAccountName: ${SERVICE_ACCOUNT}
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
   displayName: sentry image
   description: sentry docker image. Defaults to quay.io/app-sre/sentry
 - name: IMAGE_TAG
-  value: "latest"
-  displayName: sentry version
-  description: sentry version which defaults to latest
+  value: latest
+  displayName: sentry image tag
+  description: sentry image tag which defaults to latest
 - name: CLEANUP_DAYS
   value: "14"
   displayName: sentry cleanup interval
   description: how many days of data should be kept in the sentry database
 - name: SERVICE_ACCOUNT
-  value: "sentry"
+  value: sentry
   deplayName: sentry service account
   description: name of the service account to use when deploying the pod
-- name: SENTRY_SINGLE_ORGANIZATION
-  value: "true"
-  deplayName: sentry single organization
-  description: should sentry be deployed with a single organization configuration
+- name: SNUBA_API_SERVICE
+  value: snuba-api
+  displayName: sentry snuba api service
+  description: name of the snuba api service
+- name: SNUBA_API_SERVICE_PORT
+  value: "1218"
+  displayName: sentry snuba api port
+  description: port of the snuba api service
+- name: SENTRY_SERVICE
+  value: sentry-web
+  displayName: sentry web service name
+  description: name of the sentry web service
+- name: SENTRY_SERVICE_PORT
+  value: "9000"
+  displayName: sentry web service port
+  description: port the sentry web service listens on for connections
+- name: KAFKA_SERVICE
+  value: kafka
+  displayName: kafka service name
+  description: name of the kafka service
+- name: KAFKA_SERVICE_PORT
+  value: "9092"
+  displayName: kafka port
+  description: port number kafka listens on for client connections
+- name: RELAY_CREDENTIALS_SECRET
+  value: relay-credentials
+  displayName: relay credentials file
+  description: name of the secret containing the relay credentials file
+- name: RELAY_CONFIG_CONFIGMAP
+  value: relay-config
+  displayName: relay config file
+  description: name of the config map containing the relay config file
+- name: RELAY_SERVICE
+  value: sentry-relay
+  displayName: sentry relay service name
+  description: name of the sentry relay service
+- name: RELAY_SERVICE_PORT
+  value: "3000"
+  displayName: sentry relay service port
+  description: port the sentry relay service listens on for connections
+- name: NGINX_IMAGE
+  value: quay.io/app-sre/nginx
+  displayName: nginx image
+  description: nginx docker image. Defaults to quay.io/app-sre/nginx
+- name: NGINX_IMAGE_TAG
+  value: "1.16"
+  displayName: nginx image tag
+  description: nginx image tag which defaults to 1.16
+- name: NGINX_CONFIG_CONFIGMAP
+  value: nginx-config
+  displayName: nginx config map
+  description: name of config map that holds the configuration for nginx
+- name: NGINX_SERVICE
+  value: sentry-nginx
+  displayName: nginx service name
+  description: name of the nginx service
+- name: NGINX_SERVICE_PORT
+  value: "9000"
+  displayName: nginx service port
+  description: port the nginx service listens on for connections
+- name: CLICKHOUSE_SERVICE
+  value: clickhouse
+  displayName: clickhouse service name
+  description: name of the clickhouse service
+- name: CLICKHOUSE_SERVICE_PORT
+  value: "8123"
+  displayName: clickhouse service port
+  description: port the clickhouse service listens on for connections
+- name: CLICKHOUSE_CONFIG_CONFIGMAP
+  value: clickhouse
+  displayName: clickhouse config map name
+  description: name of the config map containing the configuration for clickhouse
+- name: REDIS_SECRET
+  value: redis
+  displayName: redis config secret
+  description: name of the secret containing the redis configuration parameters
+- name: SNUBA_IMAGE
+  value: quay.io/app-sre/snuba
+  displayName: snuba image
+  description: snuba docker image. Defaults to quay.io/app-sre/snuba
+- name: SNUBA_IMAGE_TAG
+  value: latest
+  displayName: snuba image tag
+  description: snuba image tag which defaults to latest
+- name: SYMBOLICATOR_IMAGE
+  value: quay.io/app-sre/symbolicator
+  displayName: symbolicator image
+  description: symbolicator docker image. Defaults to quay.io/app-sre/symbolicator
+- name: SYMBOLICATOR_IMAGE_TAG
+  value: latest
+  displayName: symbolicator image tag
+  description: symbolicator image tag which defaults to latest
+- name: KAFKA_SECRET
+  value: kafka
+  displayName: kafka secret name
+  description: name of the secret containing kafka server information

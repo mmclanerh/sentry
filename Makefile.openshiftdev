@@ -1,0 +1,42 @@
+SHELL:=/bin/bash
+IMAGE_PREFIX := quay.io/app-sre
+IMAGE_TAG := $(shell git rev-parse --short=7 HEAD)
+
+SENTRY_INITIAL_EMAIL ?= tester@fake.com
+SENTRY_INITIAL_PASSWORD ?= test
+
+ifneq ($(GITHUB_APP_ID),)
+        APP_ID := -e "GITHUB_APP_ID=$(GITHUB_APP_ID)"
+endif
+
+ifneq ($(GITHUB_API_SECRET),)
+        APP_SECRET := -e "GITHUB_API_SECRET=$(GITHUB_API_SECRET)"
+endif
+
+ifneq (,$(wildcard $(CURDIR)/.docker))
+        DOCKER_CONF := $(CURDIR)/.docker
+else
+        DOCKER_CONF := $(HOME)/.docker
+endif
+
+
+SENTRY_NS:=sentry
+
+clickhouse-deploy:
+	 oc process -f clickhouse.yaml | oc -n $(SENTRY_NS) create -f -
+
+clickhouse-deploy-lts:
+	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=latest | oc -n $(SENTRY_NS) create -f -
+
+clickhouse-update-lts:
+	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=latest | oc -n $(SENTRY_NS) apply -f -
+
+clickhouse-update-fili:
+	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=filimonovq/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=21.1.2.15 | oc -n $(SENTRY_NS) apply -f -
+
+clickhouse-clean:
+	oc -n $(SENTRY_NS) delete deployment/clickhouse --wait=true
+
+clickhouse-debug:
+	oc -n $(SENTRY_NS) logs deployment/clickhouse
+	oc -n $(SENTRY_NS) rsh --shell=/bin/bash --request-timeout=10 deployment/clickhouse

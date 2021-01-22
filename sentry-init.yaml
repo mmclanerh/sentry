@@ -1,0 +1,211 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: sentry-init
+objects:
+- kind: Job
+  apiVersion: batch/v1
+  metadata:
+    # Initializes database with Sentry data and creates initial user
+    name: sentry-init
+  spec:
+    template:
+      spec:
+        containers:
+        - name: database-populator
+          image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          resources:
+            limits:
+              # for some reason this populator is consuming lots of memory
+              cpu: 500m
+              memory: 3500Mi
+            requests:
+              cpu: 50m
+              memory: 800Mi
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-general
+          - secretRef:
+              name: sentry-init
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - |
+              # Init migrations
+              sentry upgrade --noinput
+              # Create user to sentry
+              sentry createuser --email ${SENTRY_INITIAL_EMAIL} --password ${SENTRY_INITIAL_PASSWORD} --superuser --no-input
+        restartPolicy: OnFailure
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- kind: Job
+  apiVersion: batch/v1
+  metadata:
+    name: kafka-topic-init
+  spec:
+    template:
+      spec:
+        containers:
+        - name: kafka-topic-init
+          image: ${KAFKA_IMAGE}:${KAFKA_IMAGE_TAG}
+          imagePullPolicy: Always
+          env:
+          - name: KAFKA_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: kafka
+                key: bootstrapServerHost
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - |
+              kafka-topics --create --topic ingest-attachments --bootstrap-server ${KAFKA_SERVER}:9092
+              kafka-topics --create --topic ingest-transactions --bootstrap-server ${KAFKA_SERVER}:9092
+              kafka-topics --create --topic ingest-events --bootstrap-server ${KAFKA_SERVER}:9092
+        restartPolicy: OnFailure
+        serviceAccountName: ${SERVICE_ACCOUNT}
+- kind: Job
+  apiVersion: batch/v1
+  metadata:
+    name: snuba-init
+  spec:
+    template:
+      spec:
+        containers:
+        - name: snuba-init
+          image: ${SNUBA_IMAGE}:${SNUBA_IMAGE_TAG}
+          imagePullPolicy: Always
+          env:
+          - name: SNUBA_SETTINGS
+            value: docker
+          - name: CLICKHOUSE_HOST
+            value: ${CLICKHOUSE_SERVICE}
+          - name: CLICKHOUSE_PORT
+            value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: DEFAULT_BROKERS
+            valueFrom:
+              secretKeyRef:
+                name: ${KAFKA_SECRET}
+                key: bootstrapServerHost
+          - name: REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - |
+              snuba bootstrap --no-migrate --force
+              snuba migrations migrate --force
+        restartPolicy: OnFailure
+        serviceAccountName: ${SERVICE_ACCOUNT}
+parameters:
+- name: IMAGE
+  value: quay.io/app-sre/sentry
+  displayName: sentry image
+  description: sentry docker image. Defaults to quay.io/app-sre/sentry
+- name: IMAGE_TAG
+  value: latest
+  displayName: sentry image tag
+  description: sentry image tag which defaults to latest
+- name: KAFKA_IMAGE
+  value: quay.io/cloudservices/cp-kafka
+  displayName: kafka image
+  description: kafka docker image. Defaults to quay.io/app-sre/cp-kafka
+- name: KAFKA_IMAGE_TAG
+  value: "5.5.0"
+  displayName: kafka image tag
+  description: kafka image tag which defaults to 5.5.0
+- name: SNUBA_IMAGE
+  value: quay.io/app-sre/snuba
+  displayName: snuba image
+  description: senter docker image. Defaults to quay.io/app-sre/snuba
+- name: SNUBA_IMAGE_TAG
+  value: latest
+  displayName: snuba image tag
+  description: snuba image tag which defaults to latest
+- name: CLICKHOUSE_SERVICE
+  value: clickhouse
+  displayName: clickhouse service name
+  description: name of the clickhouse service
+- name: CLICKHOUSE_SERVICE_PORT
+  value: "8123"
+  displayName: clickhouse service port
+  description: port the clickhouse service listens on for connections
+- name: KAFKA_SECRET
+  value: kafka
+  displayName: kafka secret name
+  description: name of the secret containing kafka server information
+- name: REDIS_SECRET
+  value: redis
+  displayName: redis config secret
+  description: name of the secret containing the redis configuration parameters
+- name: SERVICE_ACCOUNT
+  value: sentry
+  deplayName: sentry service account
+  description: name of the service account to use when deploying the pod

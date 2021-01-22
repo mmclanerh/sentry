@@ -1,0 +1,4 @@
+- Add symbolicator cleanup cron job (run "symbolicator cleanup" command)
+- Add deployment for relay if needed
+- Add snuba cleanup
+- Convert from snuba's DEFAULT_BROKERS to BROKER_CONFIG (needed for auth config)
