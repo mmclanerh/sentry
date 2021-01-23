@@ -29,7 +29,7 @@ clickhouse-deploy-lts:
 	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=latest | oc -n $(SENTRY_NS) create -f -
 
 clickhouse-update-lts:
-	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=latest | oc -n $(SENTRY_NS) apply -f -
+	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=7900d7b | oc -n $(SENTRY_NS) apply -f -
 
 clickhouse-update-fili:
 	 oc process -f clickhouse.yaml -p CLICKHOUSE_IMAGE=filimonovq/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=21.1.2.15 | oc -n $(SENTRY_NS) apply -f -
