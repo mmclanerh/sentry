@@ -13,7 +13,7 @@ objects:
     template:
       spec:
         containers:
-        - name: database-populator
+        - name: sentry-init
           image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           resources:

@@ -24,7 +24,7 @@ To see the error, navigate to Projects->interal in the sentry UI.
 
 1. Create a postgres db
 ```shell
-oc new-app --image-stream=openshift/postgresql:9.6-el8 -e POSTGRESQL_USER=sentry -e POSTGRESQL_PASSWORD=secret POSTGRESQL_DATABASE=sentry
+oc new-app --image-stream=openshift/postgresql:9.6-el8 -e POSTGRESQL_USER=sentry -e POSTGRESQL_PASSWORD=secret POSTGRESQL_ADMIN_PASSWORD=admin POSTGRESQL_DATABASE=sentry
 ```
 
 1. Generate a set of credentials for relay

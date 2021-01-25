@@ -236,6 +236,36 @@ objects:
     selector:
       sentry-component: kafka
     sessionAffinity: None
+- kind: Job
+  apiVersion: batch/v1
+  metadata:
+    name: postgres-enable-citext
+  spec:
+    template:
+      spec:
+        containers:
+        - name: postgres-enable-citext
+          image: ${POSTGRES_IMAGE}:${POSTGRES_IMAGE_TAG}
+          imagePullPolicy: Always
+          env:
+          - name: POSTGRES_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          command:
+            - "/bin/bash"
+            - "-ecx"
+            - |
+              export PGPASSWORD="${POSTGRES_ADMIN_PW}"
+              psql -h $POSTGRES_SERVER -d $DB_NAME -U postgres -c "CREATE EXTENSION citext;"
+        restartPolicy: OnFailure
+        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -502,3 +532,9 @@ parameters:
   value: "3000"
   displayName: sentry relay service port
   description: port the sentry relay service listens on for connections
+- name: POSTGRES_IMAGE
+  value: quay.io/app-sre/postgres
+- name: POSTGRES_IMAGE_TAG
+  value: "9.6"
+- name: POSTGRES_ADMIN_PW
+  value: admin
