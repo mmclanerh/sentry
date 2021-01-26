@@ -2078,7 +2078,7 @@ parameters:
   displayName: sentry web service port
   description: port the sentry web service listens on for connections
 - name: KAFKA_SERVICE
-  value: kafka
+  value: sentry-kafka
   displayName: kafka service name
   description: name of the kafka service
 - name: KAFKA_SERVICE_PORT
