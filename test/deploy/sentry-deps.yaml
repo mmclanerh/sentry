@@ -62,7 +62,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -139,7 +138,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -219,7 +217,6 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -308,14 +305,6 @@ objects:
     GITHUB_API_SECRET: ${GITHUB_API_SECRET}
     GITHUB_APP_ID: ${GITHUB_APP_ID}
 - apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    labels:
-      service: sentry
-    name: sentry
-  stringData:
-    SENTRY_SINGLE_ORGANIZATION: "true"
-- apiVersion: v1
   kind: Secret
   metadata:
     labels:
@@ -344,12 +333,9 @@ objects:
 - apiVersion: v1
   kind: ServiceAccount
   metadata:
-    labels:
-      sentry-component: sentry
-      service: sentry
     name: ${SERVICE_ACCOUNT}
   imagePullSecrets:
-  - name: quay.io
+    - name: quay.io
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -359,119 +345,11 @@ objects:
     name: kafka
   stringData:
     bootstrapServerHost: ${KAFKA_SERVICE}
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    labels:
-      sentry-component: relay
-      service: sentry
-    name: relay-config
-  data:
-    config.yml: |
-      relay:
-        upstream: "http://${SENTRY_SERVICE}:${{SENTRY_SERVICE_PORT}}/"
-        host: 0.0.0.0
-        port: ${{RELAY_SERVICE_PORT}}
-      logging:
-        level: WARN
-      processing:
-        enabled: true
-        kafka_config:
-          - {name: "bootstrap.servers", value: "${KAFKA_SERVICE}:${{KAFKA_SERVICE_PORT}}"}
-        redis: redis://${REDIS_SERVICE}:${{REDIS_SERVICE_PORT}}
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    labels:
-      sentry-component: nginx
-      service: sentry
-    name: nginx-config
-  data:
-    nginx.conf: |
-      user nginx;
-      worker_processes 1;
-
-      error_log /var/log/nginx/error.log warn;
-      pid /var/run/nginx.pid;
-
-
-      events {
-        worker_connections 1024;
-      }
-
-
-      http {
-        default_type application/octet-stream;
-
-        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-        '$status $body_bytes_sent "$http_referer" '
-        '"$http_user_agent" "$http_x_forwarded_for"';
-
-        access_log /var/log/nginx/access.log main;
-
-        sendfile on;
-        tcp_nopush on;
-        tcp_nodelay on;
-        reset_timedout_connection on;
-
-        keepalive_timeout 75s;
-
-        gzip off;
-        server_tokens off;
-
-        server_names_hash_bucket_size 64;
-        types_hash_max_size 2048;
-        types_hash_bucket_size 64;
-        client_max_body_size 100m;
-
-        proxy_http_version 1.1;
-        proxy_redirect off;
-        proxy_buffering off;
-        proxy_next_upstream error timeout invalid_header http_502 http_503 non_idempotent;
-        proxy_next_upstream_tries 2;
-
-        # Remove the Connection header if the client sends it,
-        # it could be "close" to close a keepalive connection
-        proxy_set_header Connection '';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Request-Id $request_id;
-        proxy_read_timeout 30s;
-        proxy_send_timeout 5s;
-
-        upstream relay {
-          server ${RELAY_SERVICE}:${{RELAY_SERVICE_PORT}};
-        }
-
-        upstream sentry {
-          server ${SENTRY_SERVICE}:${{SENTRY_SERVICE_PORT}};
-        }
-
-        server {
-          listen 80;
-
-          location /api/store/ {
-            proxy_pass http://relay;
-          }
-          location ~ ^/api/[1-9]\d*/ {
-            proxy_pass http://relay;
-          }
-          location / {
-            proxy_pass http://sentry;
-          }
-        }
-      }
 parameters:
 - name: KAFKA_IMAGE
   value: quay.io/cloudservices/cp-kafka
 - name: KAFKA_IMAGE_TAG
   value: 5.5.0
-- name: SERVICE_ACCOUNT
-  value: sentry
-  deplayName: sentry service account
-  description: name of the service account to use when deploying the pod
 - name: RELAY_CREDENTIALS
   required: true
   displayName: relay's credential file
@@ -492,14 +370,6 @@ parameters:
   value: sentry
 - name: POSTGRES_PASSWORD
   value: secret
-- name: REDIS_SERVICE
-  value: redis
-  displayName: redis service name
-  description: name of the redis service
-- name: REDIS_SERVICE_PORT
-  value: "6379"
-  displayName: redis port
-  description: port number redis listens on for client connections
 - name: KAFKA_SERVICE
   value: sentry-kafka
   displayName: kafka service name
@@ -508,14 +378,6 @@ parameters:
   value: "9092"
   displayName: kafka port
   description: port number kafka listens on for client connections
-- name: SENTRY_SERVICE
-  value: sentry-web
-  displayName: sentry web service name
-  description: name of the sentry web service
-- name: SENTRY_SERVICE_PORT
-  value: "9000"
-  displayName: sentry web service port
-  description: port the sentry web service listens on for connections
 - name: REDIS_IMAGE
   value: quay.io/app-sre/redis-5
 - name: REDIS_IMAGE_TAG
@@ -524,17 +386,13 @@ parameters:
   value: quay.io/cloudservices/cp-zookeeper
 - name: ZOOKEEPER_IMAGE_TAG
   value: "5.5.0"
-- name: RELAY_SERVICE
-  value: sentry-relay
-  displayName: sentry relay service name
-  description: name of the sentry relay service
-- name: RELAY_SERVICE_PORT
-  value: "3000"
-  displayName: sentry relay service port
-  description: port the sentry relay service listens on for connections
 - name: POSTGRES_IMAGE
   value: quay.io/app-sre/postgres
 - name: POSTGRES_IMAGE_TAG
   value: "9.6"
 - name: POSTGRES_ADMIN_PW
   value: admin
+- name: SERVICE_ACCOUNT
+  value: sentry
+  deplayName: sentry service account
+  description: name of the service account to use when deploying the pod

@@ -89,7 +89,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -126,14 +126,14 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
     labels:
       sentry-component: sentry
       service: sentry
-    name: sentry-web
+    name: ${SENTRY_SERVICE}
   spec:
     replicas: 2
     selector:
@@ -211,7 +211,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -251,7 +251,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -338,7 +338,7 @@ objects:
           - name: C_FORCE_ROOT
             value: "TRUE"
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -375,7 +375,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -405,6 +405,7 @@ objects:
           image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           command:
+          - sentry
           - run
           - ingest-consumer
           - --all-consumer-types
@@ -460,7 +461,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -497,7 +498,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -527,9 +528,10 @@ objects:
           image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           command:
+          - sentry
           - run
           - post-process-forwarder
-          - --commit-batch-size 1
+          - --commit-batch-size=1
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
@@ -582,7 +584,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -619,7 +621,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -649,10 +651,11 @@ objects:
           image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           command:
+          - sentry
           - run
           - query-subscription-consumer
-          - --commit-batch-size 1 
-          - --topic events-subscription-results
+          - --commit-batch-size=1 
+          - --topic=events-subscription-results
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
@@ -705,7 +708,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -742,7 +745,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -772,10 +775,11 @@ objects:
           image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           command:
+          - sentry
           - run
           - query-subscription-consumer
-          - --commit-batch-size 1 
-          - --topic transactions-subscription-results
+          - --commit-batch-size=1 
+          - --topic=transactions-subscription-results
           env:
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
@@ -828,7 +832,7 @@ objects:
                 name: smtp
                 key: require_tls
           - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
           - name: SENTRY_REDIS_HOST
             valueFrom:
               secretKeyRef:
@@ -865,198 +869,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    labels:
-      sentry-component: relay
-      service: sentry
-    name: relay
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        sentry-task: relay
-    progressDeadlineSeconds: 600
-    revisionHistoryLimit: 10
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    template:
-      metadata:
-        labels:
-          sentry-task: relay
-      spec:
-        containers:
-        - name: relay
-          image: ${IMAGE}:${IMAGE_TAG}
-          imagePullPolicy: Always
-          command:
-          - run
-          - -c /etc/relay
-          env:
-          - name: SENTRY_POSTGRES_HOST
-            valueFrom:
-              secretKeyRef:
-                name: sentry-rds
-                key: db.host
-          - name: SENTRY_POSTGRES_PORT
-            valueFrom:
-              secretKeyRef:
-                name: sentry-rds
-                key: db.port
-          - name: SENTRY_DB_USER
-            valueFrom:
-              secretKeyRef:
-                name: sentry-rds
-                key: db.user
-          - name: SENTRY_DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: sentry-rds
-                key: db.password
-          - name: SENTRY_DB_NAME
-            valueFrom:
-              secretKeyRef:
-                name: sentry-rds
-                key: db.name
-          - name: SENTRY_EMAIL_HOST
-            valueFrom:
-              secretKeyRef:
-                name: smtp
-                key: server
-          - name: SENTRY_EMAIL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: smtp
-                key: password
-          - name: SENTRY_EMAIL_USER
-            valueFrom:
-              secretKeyRef:
-                name: smtp
-                key: username
-          - name: SENTRY_EMAIL_PORT
-            valueFrom:
-              secretKeyRef:
-                name: smtp
-                key: port
-          - name: SENTRY_EMAIL_USE_TLS
-            valueFrom:
-              secretKeyRef:
-                name: smtp
-                key: require_tls
-          - name: SNUBA
-            value: http://${SNUBA_API_SERVICE}:${$SNUBA_API_SERVICE_PORT}}
-          - name: SENTRY_REDIS_HOST
-            valueFrom:
-              secretKeyRef:
-                name: ${REDIS_SECRET}
-                key: endpoint
-          - name: SENTRY_REDIS_PORT
-            valueFrom:
-              secretKeyRef:
-                name: ${REDIS_SECRET}
-                key: port
-          - name: SENTRY_REDIS_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: ${REDIS_SECRET}
-                key: auth_token
-          envFrom:
-          - configMapRef:
-              name: sentry
-          - secretRef:
-              name: sentry-github-oauth
-          - secretRef:
-              name: sentry-general
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1024Mi
-            requests:
-              cpu: 100m
-              memory: 512Mi
-          volumeMounts:
-          - name: relay-config
-            mountPath: /etc/relay/config.yml
-            subPath: config.yml
-          - name: relay-credentials
-            mountPath: /etc/relay/credentials.json
-            subPath: credentials.json
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        volumes:
-        - name: relay-config
-          configMap:
-            name: ${RELAY_CONFIG_CONFIGMAP}
-            items:
-              key: config.yml
-              path: config.yml
-        - name: relay-credentials
-          secret:
-            secretName: ${RELAY_CREDENTIALS_SECRET}
-            items:
-              key: credentials.json
-              path: credentials.json
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    labels:
-      sentry-component: nginx
-      service: sentry
-    name: nginx
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        sentry-task: nginx
-    progressDeadlineSeconds: 600
-    revisionHistoryLimit: 10
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    template:
-      metadata:
-        labels:
-          sentry-task: nginx
-      spec:
-        containers:
-        - name: nginx
-          image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
-          imagePullPolicy: Always
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1024Mi
-            requests:
-              cpu: 100m
-              memory: 512Mi
-          volumeMounts:
-          - name: nginx-config
-            mountPath: /etc/nginx
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        volumes:
-        - name: nginx-config
-          configMap:
-            name: ${NGINX_CONFIG_CONFIGMAP}
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: batch/v1beta1
   kind: CronJob
   metadata:
@@ -1136,7 +949,7 @@ objects:
                     name: smtp
                     key: require_tls
               - name: SNUBA
-                value: http://${SNUBA_API_SERVICE}:${{SNUBA_API_SERVICE_PORT}}
+                value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
               - name: SENTRY_REDIS_HOST
                 valueFrom:
                   secretKeyRef:
@@ -1173,7 +986,15 @@ objects:
             schedulerName: default-scheduler
             securityContext: {}
             terminationGracePeriodSeconds: 30
-            serviceAccountName: ${SERVICE_ACCOUNT}
+#            serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      service: sentry
+    name: sentry
+  stringData:
+    SENTRY_SINGLE_ORGANIZATION: "${SENTRY_SINGLE_ORGANIZATION}"
 - apiVersion: v1
   kind: Service
   metadata:
@@ -1191,6 +1012,177 @@ objects:
     selector:
       sentry-task: web
     sessionAffinity: None
+#- apiVersion: v1
+#  kind: ServiceAccount
+#  metadata:
+#    name: ${SERVICE_ACCOUNT}
+#  imagePullSecrets:
+#    - name: quay.io
+
+# Relay
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: relay
+      service: sentry
+    name: relay
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: relay
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: relay
+      spec:
+        containers:
+        - name: relay
+          image: ${RELAY_IMAGE}:${RELAY_IMAGE_TAG}
+          imagePullPolicy: Always
+          command:
+          - relay
+          - run
+          - -c
+          - /etc/relay
+          env:
+          - name: SENTRY_POSTGRES_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.host
+          - name: SENTRY_POSTGRES_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.port
+          - name: SENTRY_DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.user
+          - name: SENTRY_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.password
+          - name: SENTRY_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sentry-rds
+                key: db.name
+          - name: SENTRY_EMAIL_HOST
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: server
+          - name: SENTRY_EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: password
+          - name: SENTRY_EMAIL_USER
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: username
+          - name: SENTRY_EMAIL_PORT
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: port
+          - name: SENTRY_EMAIL_USE_TLS
+            valueFrom:
+              secretKeyRef:
+                name: smtp
+                key: require_tls
+          - name: SNUBA
+            value: http://${SNUBA_API_SERVICE}:${SNUBA_API_SERVICE_PORT}
+          - name: SENTRY_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: endpoint
+          - name: SENTRY_REDIS_PORT
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: port
+          - name: SENTRY_REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${REDIS_SECRET}
+                key: auth_token
+          envFrom:
+          - configMapRef:
+              name: sentry
+          - secretRef:
+              name: sentry-github-oauth
+          - secretRef:
+              name: sentry-general
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+          volumeMounts:
+          - name: relay-config
+            mountPath: /etc/relay/config.yml
+            subPath: config.yml
+          - name: relay-credentials
+            mountPath: /etc/relay/credentials.json
+            subPath: credentials.json
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        volumes:
+        - name: relay-config
+          configMap:
+            name: ${RELAY_CONFIG_CONFIGMAP}
+            items:
+            - key: config.yml
+              path: config.yml
+        - name: relay-credentials
+          secret:
+            secretName: ${RELAY_CREDENTIALS_SECRET}
+            items:
+            - key: credentials.json
+              path: credentials.json
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+#        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      sentry-component: relay
+      service: sentry
+    name: relay-config
+  data:
+    config.yml: |
+      relay:
+        upstream: "http://${SENTRY_SERVICE}:${SENTRY_SERVICE_PORT}/"
+        host: 0.0.0.0
+        port: ${RELAY_SERVICE_PORT}
+      logging:
+        level: WARN
+      processing:
+        enabled: true
+        kafka_config:
+          - {name: "bootstrap.servers", value: "${KAFKA_SERVICE}:${KAFKA_SERVICE_PORT}"}
+        redis: redis://${REDIS_SERVICE}:${REDIS_SERVICE_PORT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -1208,6 +1200,152 @@ objects:
     selector:
       sentry-task: relay
     sessionAffinity: None
+
+# Nginx
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      sentry-component: nginx
+      service: sentry
+    name: nginx
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        sentry-task: nginx
+    progressDeadlineSeconds: 600
+    revisionHistoryLimit: 10
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      metadata:
+        labels:
+          sentry-task: nginx
+      spec:
+        containers:
+        - name: nginx
+          image: ${NGINX_IMAGE}:${NGINX_IMAGE_TAG}
+          imagePullPolicy: Always
+          env:
+          - name: LISTEN_PORT
+            value: ${NGINX_LISTEN_PORT}
+          resources:
+            limits:
+              cpu: 800m
+              memory: 300Mi
+            requests:
+              cpu: 500m
+              memory: 200Mi
+          volumeMounts:
+          - name: nginx-config
+            mountPath: /nginx.conf
+            subPath: nginx.conf
+          - name: nginx-cache
+            mountPath: /var/cache/nginx
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        volumes:
+        - name: nginx-config
+          configMap:
+            name: ${NGINX_CONFIG_CONFIGMAP}
+            defaultMode: 420
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+        - name: nginx-cache
+          emptyDir: {}
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+#        serviceAccountName: ${SERVICE_ACCOUNT}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    labels:
+      sentry-component: nginx
+      service: sentry
+    name: ${NGINX_CONFIG_CONFIGMAP}
+  data:
+    nginx.conf: |
+      daemon off;
+      worker_processes 1;
+
+      error_log /dev/stderr;
+      pid /tmp/nginx.pid;
+
+
+      events {
+        worker_connections 1024;
+      }
+
+
+      http {
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+        '$status $body_bytes_sent "$http_referer" '
+        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /dev/stdout main;
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        reset_timedout_connection on;
+
+        keepalive_timeout 75s;
+
+        gzip off;
+        server_tokens off;
+
+        server_names_hash_bucket_size 64;
+        types_hash_max_size 2048;
+        types_hash_bucket_size 64;
+        client_max_body_size 100m;
+
+        proxy_http_version 1.1;
+        proxy_redirect off;
+        proxy_buffering off;
+        proxy_next_upstream error timeout invalid_header http_502 http_503 non_idempotent;
+        proxy_next_upstream_tries 2;
+
+        # Remove the Connection header if the client sends it,
+        # it could be "close" to close a keepalive connection
+        proxy_set_header Connection '';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id $request_id;
+        proxy_read_timeout 30s;
+        proxy_send_timeout 5s;
+
+        upstream relay {
+          server ${RELAY_SERVICE}:${RELAY_SERVICE_PORT};
+        }
+
+        upstream sentry {
+          server ${SENTRY_SERVICE}:${SENTRY_SERVICE_PORT};
+        }
+
+        server {
+          listen *:${LISTEN_PORT};
+
+          location /api/store/ {
+            proxy_pass http://relay;
+          }
+          location ~ ^/api/[1-9]\d*/ {
+            proxy_pass http://relay;
+          }
+          location / {
+            proxy_pass http://sentry;
+          }
+        }
+      }
 - apiVersion: v1
   kind: Service
   metadata:
@@ -1221,82 +1359,12 @@ objects:
     - name: http
       port: ${{NGINX_SERVICE_PORT}}
       protocol: TCP
-      targetPort: 80
+      targetPort: ${{NGINX_LISTEN_PORT}}
     selector:
       sentry-task: nginx
     sessionAffinity: None
 
-
 # Snuba
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    labels:
-      sentry-component: snuba
-      service: sentry
-    name: clickhouse
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        sentry-task: clickhouse
-    progressDeadlineSeconds: 600
-    revisionHistoryLimit: 10
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    template:
-      metadata:
-        labels:
-          sentry-task: clickhouse
-      spec:
-        containers:
-        - name: clickhouse-server
-          image: yandex/clickhouse-server:20.3.9.70
-          imagePullPolicy: IfNotPresent
-          ports:
-          - containerPort: 8123
-            protocol: TCP
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1024Mi
-            requests:
-              cpu: 100m
-              memory: 512Mi
-          volumeMounts:
-          - name: clickhouse-config
-            mountPath: /etc/clickhouse-server/config.d
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        volumes:
-        - name: clickhouse-config
-          configMap:
-            name: ${CLICKHOUSE_CONFIG_CONFIGMAP}
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
-- apiVersion: v1
-  kind: Service
-  metadata:
-    labels:
-      sentry-component: snuba
-      service: sentry
-    name: ${CLICKHOUSE_SERVICE}
-  spec:
-    type: ClusterIP
-    ports:
-    - port: ${{CLICKHOUSE_SERVICE_PORT}}
-      protocol: TCP
-      targetPort: 8123
-    selector:
-      sentry-task: clickhouse
-    sessionAffinity: None
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1367,7 +1435,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: v1
   kind: Service
   metadata:
@@ -1415,9 +1483,9 @@ objects:
           command:
           - snuba
           - consumer
-          - --storage events
+          - --storage=events
           - --auto-offset-reset=latest
-          - --max-batch-time-ms 750
+          - --max-batch-time-ms=750
           env:
           - name: SNUBA_SETTINGS
             value: docker
@@ -1457,7 +1525,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1489,9 +1557,9 @@ objects:
           command:
           - snuba
           - consumer
-          - --storage outcomes_raw
+          - --storage=outcomes_raw
           - --auto-offset-reset=earliest
-          - --max-batch-time-ms 750
+          - --max-batch-time-ms=750
           env:
           - name: SNUBA_SETTINGS
             value: docker
@@ -1531,7 +1599,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1563,9 +1631,9 @@ objects:
           command:
           - snuba
           - consumer
-          - --storage sessions_raw
+          - --storage=sessions_raw
           - --auto-offset-reset=latest
-          - --max-batch-time-ms 750
+          - --max-batch-time-ms=750
           env:
           - name: SNUBA_SETTINGS
             value: docker
@@ -1605,7 +1673,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1636,11 +1704,11 @@ objects:
           imagePullPolicy: Always
           command:
           - snuba
-          - consumer
-          - --storage transactions
-          - --consumer-group transactions_group
+          - consumer 
+          - --storage=transactions
+          - --consumer-group=transactions_group
           - --auto-offset-reset=latest
-          - --max-batch-time-ms 750
+          - --max-batch-time-ms=750
           - --commit-log-topic=snuba-commit-log
           env:
           - name: SNUBA_SETTINGS
@@ -1681,7 +1749,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1713,9 +1781,9 @@ objects:
           command:
           - snuba
           - replacer
-          - --storage events
+          - --storage=events
           - --auto-offset-reset=latest
-          - --max-batch-size 3
+          - --max-batch-size=3
           env:
           - name: SNUBA_SETTINGS
             value: docker
@@ -1755,7 +1823,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1835,7 +1903,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
@@ -1915,7 +1983,7 @@ objects:
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 
 # Symbolicator
 - apiVersion: apps/v1
@@ -1947,8 +2015,10 @@ objects:
           image: ${SYMBOLICATOR_IMAGE}:${SYMBOLICATOR_IMAGE_TAG}
           imagePullPolicy: Always
           command:
+          - symbolicator
           - run
-          - -c /etc/symbolicator/config.yml
+          - -c
+          - /etc/symbolicator/config.yml
           resources:
             limits:
               cpu: 1000m
@@ -1956,19 +2026,25 @@ objects:
             requests:
               cpu: 100m
               memory: 512Mi
+          volumeMounts:
+          - name: symbolicator-cache
+            mountPath: /data
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
+        volumes:
+        - name: symbolicator-cache
+          emptyDir: {}
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
         terminationGracePeriodSeconds: 30
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
   displayName: sentry image
-  description: sentry docker image. Defaults to quay.io/app-sre/sentry
+  description: sentry container image. Defaults to quay.io/app-sre/sentry
 - name: IMAGE_TAG
   value: latest
   displayName: sentry image tag
@@ -1977,10 +2053,14 @@ parameters:
   value: "14"
   displayName: sentry cleanup interval
   description: how many days of data should be kept in the sentry database
-- name: SERVICE_ACCOUNT
-  value: sentry
-  deplayName: sentry service account
-  description: name of the service account to use when deploying the pod
+#- name: SERVICE_ACCOUNT
+#  value: sentry
+#  deplayName: sentry service account
+#  description: name of the service account to use when deploying the pod
+- name: SENTRY_SINGLE_ORGANIZATION
+  value: "true"
+  deplayName: sentry single organization
+  description: should sentry be deployed with a single organization configuration
 - name: SNUBA_API_SERVICE
   value: snuba-api
   displayName: sentry snuba api service
@@ -2006,7 +2086,7 @@ parameters:
   displayName: kafka port
   description: port number kafka listens on for client connections
 - name: RELAY_CREDENTIALS_SECRET
-  value: relay-credentials
+  value: relay
   displayName: relay credentials file
   description: name of the secret containing the relay credentials file
 - name: RELAY_CONFIG_CONFIGMAP
@@ -2014,7 +2094,7 @@ parameters:
   displayName: relay config file
   description: name of the config map containing the relay config file
 - name: RELAY_SERVICE
-  value: sentry-relay
+  value: relay
   displayName: sentry relay service name
   description: name of the sentry relay service
 - name: RELAY_SERVICE_PORT
@@ -2022,13 +2102,13 @@ parameters:
   displayName: sentry relay service port
   description: port the sentry relay service listens on for connections
 - name: NGINX_IMAGE
-  value: quay.io/app-sre/nginx
+  value: quay.io/app-sre/nginx-gate
   displayName: nginx image
-  description: nginx docker image. Defaults to quay.io/app-sre/nginx
+  description: nginx container image. Defaults to quay.io/app-sre/nginx-gate
 - name: NGINX_IMAGE_TAG
-  value: "1.16"
+  value: "32317a8"
   displayName: nginx image tag
-  description: nginx image tag which defaults to 1.16
+  description: nginx image tag to use
 - name: NGINX_CONFIG_CONFIGMAP
   value: nginx-config
   displayName: nginx config map
@@ -2041,12 +2121,16 @@ parameters:
   value: "9000"
   displayName: nginx service port
   description: port the nginx service listens on for connections
+- name: NGINX_LISTEN_PORT
+  value: "8000"
+  displayName: nginx listen port
+  description: port the nginx container will listen on
 - name: CLICKHOUSE_SERVICE
   value: clickhouse
   displayName: clickhouse service name
   description: name of the clickhouse service
 - name: CLICKHOUSE_SERVICE_PORT
-  value: "8123"
+  value: "9000"
   displayName: clickhouse service port
   description: port the clickhouse service listens on for connections
 - name: CLICKHOUSE_CONFIG_CONFIGMAP
@@ -2060,7 +2144,7 @@ parameters:
 - name: SNUBA_IMAGE
   value: quay.io/app-sre/snuba
   displayName: snuba image
-  description: snuba docker image. Defaults to quay.io/app-sre/snuba
+  description: snuba container image. Defaults to quay.io/app-sre/snuba
 - name: SNUBA_IMAGE_TAG
   value: latest
   displayName: snuba image tag
@@ -2068,7 +2152,7 @@ parameters:
 - name: SYMBOLICATOR_IMAGE
   value: quay.io/app-sre/symbolicator
   displayName: symbolicator image
-  description: symbolicator docker image. Defaults to quay.io/app-sre/symbolicator
+  description: symbolicator container image. Defaults to quay.io/app-sre/symbolicator
 - name: SYMBOLICATOR_IMAGE_TAG
   value: latest
   displayName: symbolicator image tag
@@ -2077,3 +2161,35 @@ parameters:
   value: kafka
   displayName: kafka secret name
   description: name of the secret containing kafka server information
+- name: RELAY_IMAGE
+  value: quay.io/app-sre/relay
+  displayName: relay image
+  description: sentry relay container image. Defaults to quay.io/app-sre/relay
+- name: RELAY_IMAGE_TAG
+  value: latest
+  displayName: sentry relay image tag
+  description: sentry relay image tag which defaults to latest
+- name: REDIS_SERVICE
+  value: redis
+  displayName: redis service name
+  description: name of the redis service
+- name: REDIS_SERVICE_PORT
+  value: "6379"
+  displayName: redis port
+  description: port number redis listens on for client connections
+- name: SENTRY_SERVICE
+  value: sentry-web
+  displayName: sentry web service name
+  description: name of the sentry web service
+- name: SENTRY_SERVICE_PORT
+  value: "9000"
+  displayName: sentry web service port
+  description: port the sentry web service listens on for connections
+- name: RELAY_SERVICE
+  value: sentry-relay
+  displayName: sentry relay service name
+  description: name of the sentry relay service
+- name: RELAY_SERVICE_PORT
+  value: "3000"
+  displayName: sentry relay service port
+  description: port the sentry relay service listens on for connections

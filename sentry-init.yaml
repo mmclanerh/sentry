@@ -76,8 +76,8 @@ objects:
                 name: smtp
                 key: require_tls
           envFrom:
-          - configMapRef:
-              name: sentry
+#          - configMapRef:
+#              name: sentry
           - secretRef:
               name: sentry-general
           - secretRef:
@@ -91,7 +91,7 @@ objects:
               # Create user to sentry
               sentry createuser --email ${SENTRY_INITIAL_EMAIL} --password ${SENTRY_INITIAL_PASSWORD} --superuser --no-input
         restartPolicy: OnFailure
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - kind: Job
   apiVersion: batch/v1
   metadata:
@@ -117,7 +117,7 @@ objects:
               kafka-topics --create --topic ingest-transactions --bootstrap-server ${KAFKA_SERVER}:9092
               kafka-topics --create --topic ingest-events --bootstrap-server ${KAFKA_SERVER}:9092
         restartPolicy: OnFailure
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 - kind: Job
   apiVersion: batch/v1
   metadata:
@@ -163,7 +163,7 @@ objects:
               snuba bootstrap --no-migrate --force
               snuba migrations migrate --force
         restartPolicy: OnFailure
-        serviceAccountName: ${SERVICE_ACCOUNT}
+#        serviceAccountName: ${SERVICE_ACCOUNT}
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
@@ -205,7 +205,7 @@ parameters:
   value: redis
   displayName: redis config secret
   description: name of the secret containing the redis configuration parameters
-- name: SERVICE_ACCOUNT
-  value: sentry
-  deplayName: sentry service account
-  description: name of the service account to use when deploying the pod
+#- name: SERVICE_ACCOUNT
+#  value: sentry
+#  deplayName: sentry service account
+#  description: name of the service account to use when deploying the pod
