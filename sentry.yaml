@@ -38,6 +38,8 @@ objects:
           - run
           - cron
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -160,6 +162,8 @@ objects:
           - run
           - web
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -285,6 +289,8 @@ objects:
           - run
           - worker
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -410,6 +416,10 @@ objects:
           - ingest-consumer
           - --all-consumer-types
           env:
+          - name: SENTRY_KAFKA_HOSTS
+            value: sentry-kafka:9092
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -533,6 +543,8 @@ objects:
           - post-process-forwarder
           - --commit-batch-size=1
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -657,6 +669,8 @@ objects:
           - --commit-batch-size=1 
           - --topic=events-subscription-results
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -781,6 +795,8 @@ objects:
           - --commit-batch-size=1 
           - --topic=transactions-subscription-results
           env:
+          - name: SENTRY_RELAY_PUBLIC_KEYS
+            value: ${SENTRY_RELAY_PUBLIC_KEYS}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -1054,6 +1070,12 @@ objects:
           - -c
           - /etc/relay
           env:
+          - name: RELAY_ID
+            value: ${RELAY_ID}
+          - name: RELAY_PUBLIC_KEY
+            value: ${RELAY_PUBLIC_KEY}
+          - name: RELAY_SECRET_KEY
+            value: ${RELAY_SECRET_KEY}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -1139,9 +1161,6 @@ objects:
           - name: relay-config
             mountPath: /etc/relay/config.yml
             subPath: config.yml
-          - name: relay-credentials
-            mountPath: /etc/relay/credentials.json
-            subPath: credentials.json
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
         volumes:
@@ -1151,12 +1170,6 @@ objects:
             items:
             - key: config.yml
               path: config.yml
-        - name: relay-credentials
-          secret:
-            secretName: ${RELAY_CREDENTIALS_SECRET}
-            items:
-            - key: credentials.json
-              path: credentials.json
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         schedulerName: default-scheduler
@@ -1490,9 +1503,11 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE} 
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
@@ -1564,9 +1579,11 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE} 
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
@@ -1714,9 +1731,11 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE} 
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
@@ -2085,22 +2104,18 @@ parameters:
   value: "9092"
   displayName: kafka port
   description: port number kafka listens on for client connections
-- name: RELAY_CREDENTIALS_SECRET
-  value: relay
-  displayName: relay credentials file
-  description: name of the secret containing the relay credentials file
-- name: RELAY_CONFIG_CONFIGMAP
-  value: relay-config
-  displayName: relay config file
-  description: name of the config map containing the relay config file
 - name: RELAY_SERVICE
-  value: relay
+  value: sentry-relay
   displayName: sentry relay service name
   description: name of the sentry relay service
 - name: RELAY_SERVICE_PORT
   value: "3000"
   displayName: sentry relay service port
   description: port the sentry relay service listens on for connections
+- name: RELAY_CONFIG_CONFIGMAP
+  value: relay-config
+  displayName: relay config file
+  description: name of the config map containing the relay config file
 - name: NGINX_IMAGE
   value: quay.io/app-sre/nginx-gate
   displayName: nginx image
@@ -2129,10 +2144,18 @@ parameters:
   value: clickhouse
   displayName: clickhouse service name
   description: name of the clickhouse service
+- name: CLICKHOUSE_HTTP_SERVICE
+  value: clickhouse-http
+  displayName: clickhouse http service name
+  description: name of the clickhouse http service
 - name: CLICKHOUSE_SERVICE_PORT
   value: "9000"
-  displayName: clickhouse service port
+  displayName: clickhouse tcp service port
   description: port the clickhouse service listens on for connections
+- name: CLICKHOUSE_HTTP_SERVICE_PORT
+  value: "8123"
+  displayName: clickhouse http service port
+  description: port the clickhouse service listens on for http connections
 - name: CLICKHOUSE_CONFIG_CONFIGMAP
   value: clickhouse
   displayName: clickhouse config map name
@@ -2177,19 +2200,15 @@ parameters:
   value: "6379"
   displayName: redis port
   description: port number redis listens on for client connections
-- name: SENTRY_SERVICE
-  value: sentry-web
-  displayName: sentry web service name
-  description: name of the sentry web service
-- name: SENTRY_SERVICE_PORT
-  value: "9000"
-  displayName: sentry web service port
-  description: port the sentry web service listens on for connections
-- name: RELAY_SERVICE
-  value: sentry-relay
-  displayName: sentry relay service name
-  description: name of the sentry relay service
-- name: RELAY_SERVICE_PORT
-  value: "3000"
-  displayName: sentry relay service port
-  description: port the sentry relay service listens on for connections
+- name: SENTRY_RELAY_PUBLIC_KEYS
+  value: 2secure4u,change-me-public-key
+  displayName: Sentry Relay Publc Keys
+- name: RELAY_PUBLIC_KEY
+  value: change-me-public-key
+  displayName: Sentry Relay Public Key
+- name: RELAY_SECRET_KEY
+  value: change-me-secret-key
+  displayName: Sentry Relay Secret Key
+- name: RELAY_ID
+  value: nnrelay-id
+  displayName: Secret Relay ID

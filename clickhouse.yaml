@@ -46,7 +46,7 @@ objects:
           resources:
             limits:
               cpu: 1000m
-              memory: 8192Mi
+              memory: 8123Mi
             requests:
               cpu: 100m
               memory: 4096Mi
@@ -82,7 +82,23 @@ objects:
     ports:
     - port: ${{CLICKHOUSE_SERVICE_PORT}}
       protocol: TCP
-      targetPort: 9000
+      targetPort: ${{CLICKHOUSE_SERVICE_PORT}}
+    selector:
+      sentry-task: clickhouse
+    sessionAffinity: None
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      sentry-component: snuba
+      service: sentry
+    name: ${CLICKHOUSE_HTTP_SERVICE}
+  spec:
+    type: ClusterIP
+    ports:
+    - port: ${{CLICKHOUSE_HTTP_SERVICE_PORT}}
+      protocol: TCP
+      targetPort: ${{CLICKHOUSE_HTTP_SERVICE_PORT}}
     selector:
       sentry-task: clickhouse
     sessionAffinity: None
@@ -126,10 +142,18 @@ parameters:
   value: clickhouse
   displayName: clickhouse service name
   description: name of the clickhouse service
+- name: CLICKHOUSE_HTTP_SERVICE
+  value: clickhouse-http
+  displayName: clickhouse http service name
+  description: name of the clickhouse http service
 - name: CLICKHOUSE_SERVICE_PORT
   value: "9000"
   displayName: clickhouse service port
   description: port the clickhouse service listens on for connections
+- name: CLICKHOUSE_HTTP_SERVICE_PORT
+  value: "8123"
+  displayName: clickhouse http service port
+  description: port the clickhouse http service listens on for connections
 - name: CLICKHOUSE_CONFIG_CONFIGMAP
   value: clickhouse
   displayName: clickhouse config map name
