@@ -342,7 +342,7 @@ objects:
     labels:
       sentry-component: snuba
       service: sentry
-    name: kafka
+    name: sentry-kafka-service
   stringData:
     bootstrapServerHost: ${KAFKA_SERVICE}
 parameters:

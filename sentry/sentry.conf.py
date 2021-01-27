@@ -129,10 +129,14 @@ if memcached:
 # A primary cache is required for things such as processing events
 SENTRY_CACHE = "sentry.cache.redis.RedisCache"
 
+kafka_bootstrap = env("KAFKA_BOOTSTRAP")
+kafka_msg_max_bytes = env("KAFKA_MSG_MAX_BYTES")
+kafka_socket_timeout = env("KAFKA_SOCKET_TIMEOUT")
+
 DEFAULT_KAFKA_OPTIONS = {
-    "bootstrap.servers": "kafka:9092",
-    "message.max.bytes": 50000000,
-    "socket.timeout.ms": 1000,
+    "bootstrap.servers": kafka_bootstrap or "kafka:9092",
+    "message.max.bytes": kafka_msg_max_bytes or 50000000,
+    "socket.timeout.ms": kafka_socket_timeout or 1000,
 }
 
 SENTRY_EVENTSTREAM = "sentry.eventstream.kafka.KafkaEventStream"

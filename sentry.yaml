@@ -38,8 +38,10 @@ objects:
           - run
           - cron
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -163,7 +165,7 @@ objects:
           - web
           env:
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -289,8 +291,10 @@ objects:
           - run
           - worker
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -416,10 +420,12 @@ objects:
           - ingest-consumer
           - --all-consumer-types
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_KAFKA_HOSTS
-            value: sentry-kafka:9092
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -543,8 +549,10 @@ objects:
           - post-process-forwarder
           - --commit-batch-size=1
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -669,8 +677,10 @@ objects:
           - --commit-batch-size=1 
           - --topic=events-subscription-results
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -795,8 +805,10 @@ objects:
           - --commit-batch-size=1 
           - --topic=transactions-subscription-results
           env:
+          - name: KAFKA_BOOTSTRAP
+            value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: ${SENTRY_RELAY_PUBLIC_KEYS}
+            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -1194,7 +1206,7 @@ objects:
       processing:
         enabled: true
         kafka_config:
-          - {name: "bootstrap.servers", value: "${KAFKA_SERVICE}:${KAFKA_SERVICE_PORT}"}
+          - {name: "bootstrap.servers", value: "${KAFKA_BOOTSTRAP}"}
         redis: redis://${REDIS_SERVICE}:${REDIS_SERVICE_PORT}
 - apiVersion: v1
   kind: Service
@@ -1413,13 +1425,15 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1503,7 +1517,7 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_HTTP_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
           - name: CLICKHOUSE_HTTP_PORT
@@ -1511,7 +1525,7 @@ objects:
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1579,7 +1593,7 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_HTTP_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
           - name: CLICKHOUSE_HTTP_PORT
@@ -1587,7 +1601,7 @@ objects:
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1655,13 +1669,15 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1731,7 +1747,7 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_HTTP_SERVICE} 
+            value: ${CLICKHOUSE_HTTP_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
           - name: CLICKHOUSE_HTTP_PORT
@@ -1739,7 +1755,7 @@ objects:
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1807,13 +1823,15 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1887,13 +1905,15 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -1967,13 +1987,15 @@ objects:
           - name: SNUBA_SETTINGS
             value: docker
           - name: CLICKHOUSE_HOST
-            value: ${CLICKHOUSE_SERVICE} 
+            value: ${CLICKHOUSE_SERVICE}
           - name: CLICKHOUSE_PORT
             value: ${CLICKHOUSE_SERVICE_PORT}
+          - name: CLICKHOUSE_HTTP_PORT
+            value: ${CLICKHOUSE_HTTP_SERVICE_PORT}
           - name: DEFAULT_BROKERS
             valueFrom:
               secretKeyRef:
-                name: ${KAFKA_SECRET}
+                name: ${KAFKA_SERVICE_SECRET}
                 key: bootstrapServerHost
           - name: REDIS_HOST
             valueFrom:
@@ -2104,6 +2126,14 @@ parameters:
   value: "9092"
   displayName: kafka port
   description: port number kafka listens on for client connections
+- name: KAFKA_BOOTSTRAP
+  value: "sentry-kafka:9092"
+  displayName: kafka bootstrap list
+  description: kafka bootstrap service-name:port (comma delimited)
+- name: KAFKA_SERVICE_SECRET
+  value: sentry-kafka-service
+  displayName: kafka secret name, containing service name
+  description: name of the secret containing kafka service name
 - name: RELAY_SERVICE
   value: sentry-relay
   displayName: sentry relay service name
@@ -2180,10 +2210,6 @@ parameters:
   value: latest
   displayName: symbolicator image tag
   description: symbolicator image tag which defaults to latest
-- name: KAFKA_SECRET
-  value: kafka
-  displayName: kafka secret name
-  description: name of the secret containing kafka server information
 - name: RELAY_IMAGE
   value: quay.io/app-sre/relay
   displayName: relay image
@@ -2200,15 +2226,20 @@ parameters:
   value: "6379"
   displayName: redis port
   description: port number redis listens on for client connections
-- name: SENTRY_RELAY_PUBLIC_KEYS
-  value: 2secure4u,change-me-public-key
-  displayName: Sentry Relay Publc Keys
-- name: RELAY_PUBLIC_KEY
-  value: change-me-public-key
-  displayName: Sentry Relay Public Key
-- name: RELAY_SECRET_KEY
-  value: change-me-secret-key
-  displayName: Sentry Relay Secret Key
 - name: RELAY_ID
-  value: nnrelay-id
   displayName: Secret Relay ID
+  description: This is the unique client ID for the relay to help identify the source
+  generate: expression
+  from: "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
+- name: RELAY_SECRET_KEY
+  displayName: Sentry Relay Secret Key
+  generate: expression
+  from: "[a-zA-Z0-9]{43}"
+- name: RELAY_PUBLIC_KEY
+  displayName: Sentry Relay Public Key
+  generate: expression
+  from: "[a-zA-Z0-9]{43}"
+- name: RELAY_PUBLIC_KEY_B
+  displayName: Sentry Relay Public Key Backup
+  generate: expression
+  from: "[a-zA-Z0-9]{43}"

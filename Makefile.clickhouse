@@ -40,13 +40,3 @@ clickhouse-clean:
 clickhouse-debug:
 	oc -n $(SENTRY_NS) logs deployment/clickhouse
 	oc -n $(SENTRY_NS) rsh --shell=/bin/bash --request-timeout=10 deployment/clickhouse
-
-everything-init-probably:
-	oc new-app --image-stream=openshift/postgresql:9.6-el8 -e POSTGRESQL_USER=sentry -e POSTGRESQL_PASSWORD=XXchangeme POSTGRESQL_ADMIN_PASSWORD=XXchangetoo POSTGRESQL_DATABASE=sentry
-	oc process --local -f test/deploy/sentry-deps.yaml -p SENTRY_SECRET_KEY="$SENTRY_KEY" | oc create -f -
-	oc process --local -f clickhouse.yaml -p CLICKHOUSE_IMAGE=quay.io/mmclane/clickhouse-server -p CLICKHOUSE_IMAGE_TAG=latest | oc create -f -
-	oc process --local -f sentry-init.yaml -p IMAGE=quay.io/rrati/sentry -p IMAGE_TAG=test -p SNUBA_IMAGE=quay.io/rrati/snuba -p SNUBA_IMAGE_TAG=test | oc create -f -
-	oc process --local -f sentry-init.yaml -p IMAGE=quay.io/rrati/sentry -p IMAGE_TAG=test -p SNUBA_IMAGE=quay.io/rrati/snuba -p SNUBA_IMAGE_TAG=test -p SYMBOLICATOR_IMAGE=quay.io/rrati/symbolicator SYMBOLICATOR_IMAGE_TAG=test RELAY_IMAGE=quay.io/rrati/relay RELAY_IMAGE_TAG=test
-
-everything-replace-maybe:
-	oc process -f sentry.yaml -p IMAGE=quay.io/rrati/sentry -p IMAGE_TAG=test -p SNUBA_IMAGE=quay.io/rrati/snuba -p SNUBA_IMAGE_TAG=test -p SYMBOLICATOR_IMAGE=quay.io/rrati/symbolicator -p SYMBOLICATOR_IMAGE_TAG=test -p RELAY_IMAGE=quay.io/rrati/relay -p RELAY_IMAGE_TAG=test | oc replace -f -
