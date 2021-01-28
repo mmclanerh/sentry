@@ -220,7 +220,7 @@ SENTRY_TAGSTORE_OPTIONS = {}
 #########
 
 # A comma separated list of public keys that belong to relay instances
-relay_keys = env("SENTRY_RELAY_PUBLIC_KEYS")
+relay_keys = env("RELAY_PUBLIC_KEYS")
 SENTRY_RELAY_WHITELIST_PK = []
 if relay_keys:
     keys = relay_keys.split(',')

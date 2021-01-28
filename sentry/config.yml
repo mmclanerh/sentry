@@ -68,4 +68,5 @@
 #########################
 # Symbolicator Settings #
 #########################
-symbolicator.enabled: true
+#symbolicator.enabled: true
+symbolicator.enabled: false

@@ -271,7 +271,9 @@ objects:
       service: sentry
     name: relay
   stringData:
-    credentials.json: ${RELAY_CREDENTIALS}
+    RELAY_ID: ${RELAY_ID}
+    RELAY_SECRET_KEY: ${RELAY_SECRET_KEY}
+    RELAY_PUBLIC_KEY: ${RELAY_PUBLIC_KEY}
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -350,10 +352,18 @@ parameters:
   value: quay.io/cloudservices/cp-kafka
 - name: KAFKA_IMAGE_TAG
   value: 5.5.0
-- name: RELAY_CREDENTIALS
+- name: RELAY_ID
+  displayName: Secret Relay ID
+  description: This is the unique client ID for the relay to help identify the source
   required: true
-  displayName: relay's credential file
-  description: sentry relay's credential information for registering with sentry
+- name: RELAY_SECRET_KEY
+  displayName: Sentry Relay Secret Key
+  description: secret key used by relay instance
+  required: true
+- name: RELAY_PUBLIC_KEY
+  displayName: Sentry Relay Public Key
+  description: public key used by relay instance
+  required: true
 - name: SENTRY_INITIAL_EMAIL
   value: tester@fake.com
 - name: SENTRY_INITIAL_PASSWORD

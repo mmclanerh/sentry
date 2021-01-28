@@ -40,8 +40,11 @@ objects:
           env:
           - name: KAFKA_BOOTSTRAP
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -164,8 +167,11 @@ objects:
           - run
           - web
           env:
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -293,8 +299,11 @@ objects:
           env:
           - name: KAFKA_BOOTSTRAP
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -424,8 +433,11 @@ objects:
             value: ${KAFKA_BOOTSTRAP}
           - name: SENTRY_KAFKA_HOSTS
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -551,8 +563,11 @@ objects:
           env:
           - name: KAFKA_BOOTSTRAP
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -679,8 +694,11 @@ objects:
           env:
           - name: KAFKA_BOOTSTRAP
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -807,8 +825,11 @@ objects:
           env:
           - name: KAFKA_BOOTSTRAP
             value: ${KAFKA_BOOTSTRAP}
-          - name: SENTRY_RELAY_PUBLIC_KEYS
-            value: "${RELAY_PUBLIC_KEY},${RELAY_PUBLIC_KEY_B}"
+          - name: RELAY_PUBLIC_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: ${RELAY_SECRET}
+                key: RELAY_PUBLIC_KEY
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -1082,12 +1103,6 @@ objects:
           - -c
           - /etc/relay
           env:
-          - name: RELAY_ID
-            value: ${RELAY_ID}
-          - name: RELAY_PUBLIC_KEY
-            value: ${RELAY_PUBLIC_KEY}
-          - name: RELAY_SECRET_KEY
-            value: ${RELAY_SECRET_KEY}
           - name: SENTRY_POSTGRES_HOST
             valueFrom:
               secretKeyRef:
@@ -1162,6 +1177,8 @@ objects:
               name: sentry-github-oauth
           - secretRef:
               name: sentry-general
+          - secretRef:
+              name: ${RELAY_SECRET}
           resources:
             limits:
               cpu: 1000m
@@ -2027,60 +2044,60 @@ objects:
 #        serviceAccountName: ${SERVICE_ACCOUNT}
 
 # Symbolicator
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    labels:
-      sentry-component: symbolicator
-      service: sentry
-    name: symbolicator
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        sentry-task: symbolicator
-    progressDeadlineSeconds: 600
-    revisionHistoryLimit: 10
-    strategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
-    template:
-      metadata:
-        labels:
-          sentry-task: symbolicator
-      spec:
-        containers:
-        - name: symbolicator
-          image: ${SYMBOLICATOR_IMAGE}:${SYMBOLICATOR_IMAGE_TAG}
-          imagePullPolicy: Always
-          command:
-          - symbolicator
-          - run
-          - -c
-          - /etc/symbolicator/config.yml
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1024Mi
-            requests:
-              cpu: 100m
-              memory: 512Mi
-          volumeMounts:
-          - name: symbolicator-cache
-            mountPath: /data
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
-        volumes:
-        - name: symbolicator-cache
-          emptyDir: {}
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        schedulerName: default-scheduler
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-#        serviceAccountName: ${SERVICE_ACCOUNT}
+#- apiVersion: apps/v1
+#  kind: Deployment
+#  metadata:
+#    labels:
+#      sentry-component: symbolicator
+#      service: sentry
+#    name: symbolicator
+#  spec:
+#    replicas: 1
+#    selector:
+#      matchLabels:
+#        sentry-task: symbolicator
+#    progressDeadlineSeconds: 600
+#    revisionHistoryLimit: 10
+#    strategy:
+#      type: RollingUpdate
+#      rollingUpdate:
+#        maxSurge: 1
+#        maxUnavailable: 0
+#    template:
+#      metadata:
+#        labels:
+#          sentry-task: symbolicator
+#      spec:
+#        containers:
+#        - name: symbolicator
+#          image: ${SYMBOLICATOR_IMAGE}:${SYMBOLICATOR_IMAGE_TAG}
+#          imagePullPolicy: Always
+#          command:
+#          - symbolicator
+#          - run
+#          - -c
+#          - /etc/symbolicator/config.yml
+#          resources:
+#            limits:
+#              cpu: 1000m
+#              memory: 1024Mi
+#            requests:
+#              cpu: 100m
+#              memory: 512Mi
+#          volumeMounts:
+#          - name: symbolicator-cache
+#            mountPath: /data
+#          terminationMessagePath: /dev/termination-log
+#          terminationMessagePolicy: File
+#        volumes:
+#        - name: symbolicator-cache
+#          emptyDir: {}
+#        dnsPolicy: ClusterFirst
+#        restartPolicy: Always
+#        schedulerName: default-scheduler
+#        securityContext: {}
+#        terminationGracePeriodSeconds: 30
+##        serviceAccountName: ${SERVICE_ACCOUNT}
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/sentry
@@ -2146,6 +2163,10 @@ parameters:
   value: relay-config
   displayName: relay config file
   description: name of the config map containing the relay config file
+- name: RELAY_SECRET
+  value: relay
+  displayName: relay secret
+  description: name of the secret containing relay sensitive config
 - name: NGINX_IMAGE
   value: quay.io/app-sre/nginx-gate
   displayName: nginx image
@@ -2202,14 +2223,14 @@ parameters:
   value: latest
   displayName: snuba image tag
   description: snuba image tag which defaults to latest
-- name: SYMBOLICATOR_IMAGE
-  value: quay.io/app-sre/symbolicator
-  displayName: symbolicator image
-  description: symbolicator container image. Defaults to quay.io/app-sre/symbolicator
-- name: SYMBOLICATOR_IMAGE_TAG
-  value: latest
-  displayName: symbolicator image tag
-  description: symbolicator image tag which defaults to latest
+#- name: SYMBOLICATOR_IMAGE
+#  value: quay.io/app-sre/symbolicator
+#  displayName: symbolicator image
+#  description: symbolicator container image. Defaults to quay.io/app-sre/symbolicator
+#- name: SYMBOLICATOR_IMAGE_TAG
+#  value: latest
+#  displayName: symbolicator image tag
+#  description: symbolicator image tag which defaults to latest
 - name: RELAY_IMAGE
   value: quay.io/app-sre/relay
   displayName: relay image
@@ -2226,20 +2247,3 @@ parameters:
   value: "6379"
   displayName: redis port
   description: port number redis listens on for client connections
-- name: RELAY_ID
-  displayName: Secret Relay ID
-  description: This is the unique client ID for the relay to help identify the source
-  generate: expression
-  from: "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}"
-- name: RELAY_SECRET_KEY
-  displayName: Sentry Relay Secret Key
-  generate: expression
-  from: "[a-zA-Z0-9]{43}"
-- name: RELAY_PUBLIC_KEY
-  displayName: Sentry Relay Public Key
-  generate: expression
-  from: "[a-zA-Z0-9]{43}"
-- name: RELAY_PUBLIC_KEY_B
-  displayName: Sentry Relay Public Key Backup
-  generate: expression
-  from: "[a-zA-Z0-9]{43}"
