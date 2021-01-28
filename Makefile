@@ -126,3 +126,6 @@ snubaup: prerequp kafkaup
 snubadown: kafkadown prereqdown
 	docker stop sentry-snuba-api sentry-snuba-consumer sentry-snuba-outcomes-consumer sentry-snuba-sessions-consumer sentry-snuba-transactions-consumer sentry-snuba-replacer sentry-snuba-subscription-consumer-events sentry-snuba-subscription-consumer-transactions
 	docker rm sentry-snuba-api sentry-snuba-consumer sentry-snuba-outcomes-consumer sentry-snuba-sessions-consumer sentry-snuba-transactions-consumer sentry-snuba-replacer sentry-snuba-subscription-consumer-events sentry-snuba-subscription-consumer-transactions
+
+redeploy-sentry:
+	oc process -f sentry.yaml -p IMAGE=quay.io/rrati/sentry -p IMAGE_TAG=latest -p SNUBA_IMAGE=quay.io/rrati/snuba -p SNUBA_IMAGE_TAG=test -p RELAY_IMAGE=quay.io/rrati/relay -p RELAY_IMAGE_TAG=test  -oyaml | oc replace -f -
