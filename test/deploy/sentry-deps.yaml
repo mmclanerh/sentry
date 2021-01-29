@@ -303,7 +303,7 @@ objects:
       sentry-component: sentry
       service: sentry
     name: sentry-github-oauth
-  data:
+  stringData:
     GITHUB_API_SECRET: ${GITHUB_API_SECRET}
     GITHUB_APP_ID: ${GITHUB_APP_ID}
 - apiVersion: v1
