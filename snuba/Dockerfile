@@ -1,6 +1,6 @@
 # Build snuba since there are not binary releases
 FROM registry.access.redhat.com/ubi8/ubi
-ENV SNUBA_VERSION 20.11.1
+ENV SNUBA_VERSION 21.1.0
 
 RUN yum -y update; \
     yum install -y \

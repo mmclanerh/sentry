@@ -14,7 +14,7 @@ RUN yum install -y \
     cmake \
     gcc-c++
 
-ENV RELAY_VERSION 20.11.1
+ENV RELAY_VERSION 21.1.0
 RUN mkdir -p /usr/src/sentry && \
     cd /usr/src/sentry && \
     git clone https://github.com/getsentry/relay.git && \

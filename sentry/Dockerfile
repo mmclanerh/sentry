@@ -59,7 +59,7 @@ RUN set -x \
     && tini -h \
     && yum remove -y wget && yum clean all
 
-ENV SENTRY_VERSION 20.11.1
+ENV SENTRY_VERSION 21.1.0
 RUN set -x \
     && yum install -y wget gcc-c++ \
     && mkdir -p /usr/src/sentry \

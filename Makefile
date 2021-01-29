@@ -20,18 +20,14 @@ else
 endif
 
 SNUBA_OPTS = --link sentry-kafka:kafka --link sentry-redis:redis --link sentry-clickhouse:clickhouse -e "SNUBA_SETTINGS=docker" -e "CLICKHOUSE_HOST=clickhouse" -e "CLICKHOUSE_PORT=9000" -e "DEFAULT_BROKERS=kafka:9092" -e "REDIS_HOST=redis" -e "REDIS_PORT=6379"
-SENTRY_OPTS = --link sentry-redis:redis --link sentry-symbolicator:symbolicator --link sentry-postgres:postgres --link sentry-kafka:kafka --link sentry-snuba-api:snuba-api -e "SENTRY_CONF=/etc/sentry" -e "SNUBA=http://snuba-api:1218" -e "SENTRY_SECRET_KEY='$(key)'" $(APP_ID) $(APP_SECRET) -e "SENTRY_SINGLE_ORGANIZATION=True" -e "SENTRY_RELAY_PUBLIC_KEYS=$(relay_keys)"
+SENTRY_OPTS = --link sentry-redis:redis --link sentry-postgres:postgres --link sentry-kafka:kafka --link sentry-snuba-api:snuba-api -e "SENTRY_CONF=/etc/sentry" -e "SNUBA=http://snuba-api:1218" -e "SENTRY_SECRET_KEY='$(key)'" $(APP_ID) $(APP_SECRET) -e "SENTRY_SINGLE_ORGANIZATION=True" -e "SENTRY_RELAY_PUBLIC_KEYS=$(relay_keys)"
 
 .PHONY: build
-build: sentryimage symbolicatorimage snubaimage relayimage
+build: sentryimage snubaimage relayimage
 
 sentryimage:
 	@docker build --pull -t $(IMAGE_PREFIX)/sentry:latest sentry
 	@docker tag $(IMAGE_PREFIX)/sentry:latest $(IMAGE_PREFIX)/sentry:$(IMAGE_TAG)
-
-symbolicatorimage:
-	@docker build --pull -t $(IMAGE_PREFIX)/symbolicator:latest symbolicator
-	@docker tag $(IMAGE_PREFIX)/symbolicator:latest $(IMAGE_PREFIX)/symbolicator:$(IMAGE_TAG)
 
 snubaimage:
 	@docker build --pull -t $(IMAGE_PREFIX)/snuba:latest snuba
@@ -60,9 +56,6 @@ localup: prerequp snubaup sentryup
 sentryup:
 	@$(eval key := $(shell docker run --rm -it $(IMAGE_PREFIX)/sentry:latest sentry config generate-secret-key))
 	@$(eval relay_keys := $(shell cat test/config/relay/credentials.json | jq .public_key | tr -d '"'))
-
-	# Symbolicator
-	docker run -d --name sentry-symbolicator --publish 3021:3021 ${IMAGE_PREFIX}/symbolicator:latest run -c /etc/symbolicator/config.yml
 
 	# DB init
 	docker run --rm -it $(SENTRY_OPTS) $(IMAGE_PREFIX)/sentry:latest upgrade --noinput
@@ -101,8 +94,8 @@ localdown: snubadown sentrydown
 
 .PHONY: sentrydown
 sentrydown:
-	docker stop sentry-cron sentry-web-01 sentry-worker-01 sentry-symbolicator sentry-ingest-consumer sentry-post-process-forwarder sentry-subscription-consumer-events sentry-subscription-consumer-transactions sentry-relay sentry-nginx
-	docker rm sentry-cron sentry-web-01 sentry-worker-01 sentry-symbolicator sentry-ingest-consumer sentry-post-process-forwarder sentry-subscription-consumer-events sentry-subscription-consumer-transactions sentry-relay sentry-nginx
+	docker stop sentry-cron sentry-web-01 sentry-worker-01 sentry-ingest-consumer sentry-post-process-forwarder sentry-subscription-consumer-events sentry-subscription-consumer-transactions sentry-relay sentry-nginx
+	docker rm sentry-cron sentry-web-01 sentry-worker-01 sentry-ingest-consumer sentry-post-process-forwarder sentry-subscription-consumer-events sentry-subscription-consumer-transactions sentry-relay sentry-nginx
 
 .PHONY: kafkadown
 kafkadown:
