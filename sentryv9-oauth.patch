@@ -1,27 +1,20 @@
-commit b9b3e8a0c2210936c7756d4fe9e516efdf7c7ac2
-Author: Mike McLane <mmclane@redhat.com>
-Date:   Mon Feb 1 14:56:11 2021 -0700
-
-    initial updates needed to support github oauth change
-
 diff --git a/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py b/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
-index faf3cb1..98ecada 100644
+index faf3cb1..1b91b8d 100644
 --- a/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
 +++ b/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
-@@ -9,9 +9,10 @@ def get_user_info(access_token):
+@@ -9,8 +9,10 @@ def get_user_info(access_token):
      session = http.build_session()
      resp = session.get(
          'https://api.github.com/user',
 -        params={'access_token': access_token},
 -        headers={'Accept': 'application/vnd.github.machine-man-preview+json'}
--    )
 +        headers={
-+            "Accept": "application/vnd.github.machine-man-preview+json"}
++            "Accept": "application/vnd.github.machine-man-preview+json",
 +            "Authorization": "token %s" % access_token,
 +        }
+     )
      resp.raise_for_status()
      resp = resp.json()
- 
 diff --git a/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py b/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py
 index 6699469..b02728d 100644
 --- a/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py
