@@ -1,0 +1,110 @@
+commit b9b3e8a0c2210936c7756d4fe9e516efdf7c7ac2
+Author: Mike McLane <mmclane@redhat.com>
+Date:   Mon Feb 1 14:56:11 2021 -0700
+
+    initial updates needed to support github oauth change
+
+diff --git a/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py b/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
+index faf3cb1..98ecada 100644
+--- a/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
++++ b/src/sentry/sentry-9.1.2/src/sentry/identity/github/provider.py
+@@ -9,9 +9,10 @@ def get_user_info(access_token):
+     session = http.build_session()
+     resp = session.get(
+         'https://api.github.com/user',
+-        params={'access_token': access_token},
+-        headers={'Accept': 'application/vnd.github.machine-man-preview+json'}
+-    )
++        headers={
++            "Accept": "application/vnd.github.machine-man-preview+json"}
++            "Authorization": "token %s" % access_token,
++        }
+     resp.raise_for_status()
+     resp = resp.json()
+ 
+diff --git a/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py b/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py
+index 6699469..b02728d 100644
+--- a/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py
++++ b/src/sentry/sentry-9.1.2/src/sentry/identity/github_enterprise/provider.py
+@@ -8,8 +8,10 @@ def get_user_info(url, access_token):
+     session = http.build_session()
+     resp = session.get(
+         u'https://{}/api/v3/user'.format(url),
+-        params={'access_token': access_token},
+-        headers={'Accept': 'application/vnd.github.machine-man-preview+json'},
++        headers={ 
++            'Accept': 'application/vnd.github.machine-man-preview+json',
++            'Authorization': "token %s" % access_token,
++        },
+         verify=False
+     )
+     resp.raise_for_status()
+diff --git a/src/sentry/sentry-9.1.2/src/social_auth/backends/github.py b/src/sentry/sentry-9.1.2/src/social_auth/backends/github.py
+index b8ad6e6..66e96ea 100644
+--- a/src/sentry/sentry-9.1.2/src/social_auth/backends/github.py
++++ b/src/sentry/sentry-9.1.2/src/social_auth/backends/github.py
+@@ -20,7 +20,7 @@ import simplejson
+ 
+ from django.conf import settings
+ from six.moves.urllib.error import HTTPError
+-from six.moves.urllib.parse import urlencode
++from six.moves.urllib.parse import Request
+ from social_auth.utils import dsa_urlopen
+ from social_auth.backends import BaseOAuth2, OAuthBackend
+ from social_auth.exceptions import AuthFailed
+@@ -49,12 +49,13 @@ class GithubBackend(OAuthBackend):
+ 
+     def _fetch_emails(self, access_token):
+         """Fetch private emails from Github account"""
+-        url = GITHUB_USER_DATA_URL + '/emails?' + urlencode({
+-            'access_token': access_token
+-        })
++        req = Request(
++            GITHUB_USER_DATA_URL + '/emails',
++            headers={"Authorization": "token %s" % access_token}
++        )
+ 
+         try:
+-            data = simplejson.load(dsa_urlopen(url))
++            data = simplejson.load(dsa_urlopen(req))
+         except (ValueError, HTTPError):
+             data = []
+         return data
+@@ -97,27 +98,26 @@ class GithubAuth(BaseOAuth2):
+ 
+     def user_data(self, access_token, *args, **kwargs):
+         """Loads user data from service"""
+-        url = GITHUB_USER_DATA_URL + '?' + urlencode({
+-            'access_token': access_token
+-        })
++        req = Request GITHUB_USER_DATA_URL,
++            headers={"Authorization": "token %s" % access_token})
+ 
+         try:
+-            data = simplejson.load(dsa_urlopen(url))
++            data = simplejson.load(dsa_urlopen(req))
+         except ValueError:
+             data = None
+ 
+         # if we have a github organization defined, test that the current users
+         # is a member of that organization.
+         if data and self.GITHUB_ORGANIZATION:
+-            member_url = GITHUB_ORGANIZATION_MEMBER_OF_URL.format(
+-                org=self.GITHUB_ORGANIZATION,
+-                username=data.get('login')
+-            ) + '?' + urlencode({
+-                'access_token': access_token
+-            })
++            req = Request(
++                GITHUB_ORGANIZATION_MEMBER_OF_URL.format(
++                    org=self.GITHUB_ORGANIZATION, username=data.get('login')
++            ),
++            headers={"Authorization": "token %s" % access_token},
++            )
+ 
+             try:
+-                response = dsa_urlopen(member_url)
++                response = dsa_urlopen(req)
+             except HTTPError:
+                 data = None
+             else:
