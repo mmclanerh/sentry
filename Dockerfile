@@ -64,6 +64,9 @@ COPY sentry.conf.py /etc/sentry/
 COPY config.yml /etc/sentry/
 
 COPY docker-entrypoint.sh /entrypoint.sh
+COPY sentryv9-oauth.patch /sentryv9-oauth.patch
+RUN yum -y install patch procps net-tools
+RUN (cd /usr/lib/python2.7/site-packages/ && patch -p5)< /sentryv9-oauth.patch
 
 EXPOSE 9000
 VOLUME /var/lib/sentry/files
