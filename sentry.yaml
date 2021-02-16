@@ -193,7 +193,7 @@ objects:
       service: sentry
     name: sentry-web
   spec:
-    replicas: ${REPLICAS_WEB}
+    replicas: ${{REPLICAS_WEB}}
     selector:
       matchLabels:
         sentry-component: sentry-web
@@ -321,7 +321,7 @@ objects:
       service: sentry
     name: sentry-worker
   spec:
-    replicas: ${REPLICAS_WORKER}
+    replicas: ${{REPLICAS_WORKER}}
     selector:
       matchLabels:
         sentry-component: sentry-worker
